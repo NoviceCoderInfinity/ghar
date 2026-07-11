@@ -52,10 +52,16 @@ Pull, tag `m1-gate`. From here you build against the contract, not against each 
 
 ### Anupam track (all in `web/`, sequential T4→T7)
 
-### T4 — Designer persona (20 min)
-- Wire `prompts/persona.md` as the Live session system instruction. Test 2 min of conversation
-  pointing the phone at the corner: warm, brief answers, India-aware.
-- **DoD:** persona holds character for 2 minutes; answers ≤ 2 sentences unless asked.
+### T4 — Designer persona + session context (30 min)
+- Wire `prompts/persona.md` (v2 "Asha" in docs/PROMPTS.md §1) as the Live session system instruction.
+- Append the SESSION CONTEXT block (docs/PROMPTS.md §1b): city from `navigator.geolocation`
+  (fallback: ask the user), time-of-day/season from `Date`, the matching city block +
+  static trend pack from docs/KNOWLEDGE.md. All client-side, assembled before connect.
+  Keep injection under ~400 tokens.
+- Test 2 min of conversation pointing the phone at the corner: warm, brief answers, city-aware
+  ("since you're in Bangalore..."), narrates during tool calls per the three-beat wait protocol.
+- **DoD:** persona holds character for 2 minutes; answers ≤ 2 sentences; mentions the city
+  naturally once; never goes silent during a generate_variants call.
 
 ### T5 — Tool declaration + mock dispatch (30 min)
 - Declare `generate_variants(description: string)`, `play_scene(scene: string)` and

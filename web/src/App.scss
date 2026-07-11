@@ -282,3 +282,48 @@ body {
   }
 }
 
+/* Beautiful Fallback styles for Variant Cards when offline or placeholders fail to load */
+.ghar-rail-tile {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  font-family: "Space Mono", monospace !important;
+  font-weight: bold !important;
+  font-size: 13px !important;
+  color: #ffffff !important;
+  text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid var(--Neutral-30) !important;
+  position: relative !important;
+  transition: transform 0.2s, box-shadow 0.2s !important;
+
+  &:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  /* Gradient backgrounds matching each style slot */
+  &:nth-child(4n+1) {
+    background: linear-gradient(135deg, #422d1b 0%, #17100a 100%) !important;
+  }
+  &:nth-child(4n+2) {
+    background: linear-gradient(135deg, #1f3322 0%, #0b140c 100%) !important;
+  }
+  &:nth-child(4n+3) {
+    background: linear-gradient(135deg, #3d1b38 0%, #150913 100%) !important;
+  }
+  &:nth-child(4n+4) {
+    background: linear-gradient(135deg, #1b263d 0%, #090e15 100%) !important;
+  }
+
+  /* Alt text centering inside the card layout */
+  img {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+

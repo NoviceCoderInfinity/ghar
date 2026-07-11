@@ -186,22 +186,32 @@ def render_evening(client: genai.Client, image_path: Path, record: dict) -> bool
 
 
 def render_monsoon(client: genai.Client, image_path: Path, record: dict) -> bool:
-    """Clip B: EDIT chained on Clip A via previous_interaction_id. Returns True on success."""
+    """Clip B: video-as-input EDIT of Clip A's mp4. Returns True on success.
+
+    LIVE-TESTED 2026-07-11: previous_interaction_id chaining is REJECTED by the API for
+    video ("Video extension is currently not supported" / "previous_interaction_id is not
+    allowed when video task is set"). The working path is feeding Clip A's mp4 back as
+    video input with task=edit (82s, verified). Docs' multi-turn story is ahead of the
+    preview API's reality — keep this shape.
+    """
     label = "monsoon"
-    prev_id = record.get("evening", {}).get("interaction_id")
-    if not prev_id:
-        print(f"\n!!! Clip B ({label}) skipped: no evening interaction_id in "
-              f"{INTERACTIONS_JSON} — run evening first.", file=sys.stderr)
+    clip_a = record.get("evening", {}).get("clip")
+    clip_a_path = (REPO_ROOT / clip_a) if clip_a else (CLIPS_DIR / "evening.mp4")
+    if not clip_a_path.exists():
+        print(f"\n!!! Clip B ({label}) skipped: Clip A not found at {clip_a_path} — "
+              f"run evening first.", file=sys.stderr)
         return False
-    print(f"\n=== Clip B ({label}): edit chained on evening interaction {prev_id} ===")
+    print(f"\n=== Clip B ({label}): video-input edit of {clip_a_path.name} ===")
     try:
         t0 = time.time()
-        # Shape verbatim from docs/omni "multi-turn editing": pass previous_interaction_id,
-        # text-only input. Works only because Clip A was stored (store defaulted to true).
+        video_b64 = base64.b64encode(clip_a_path.read_bytes()).decode("utf-8")
         interaction = client.interactions.create(
             model=MODEL,
-            previous_interaction_id=prev_id,
-            input=PROMPT_MONSOON,
+            input=[
+                {"type": "video", "data": video_b64, "mime_type": "video/mp4"},
+                {"type": "text", "text": PROMPT_MONSOON},
+            ],
+            generation_config={"video_config": {"task": "edit"}},
         )
         print(f"  [{label}] interaction created: id={interaction.id} "
               f"status={getattr(interaction, 'status', 'n/a')!r} ({time.time() - t0:.1f}s)")
@@ -211,7 +221,7 @@ def render_monsoon(client: genai.Client, image_path: Path, record: dict) -> bool
         print(f"  [{label}] DONE in {latency:.1f}s total")
         record[label] = {"interaction_id": interaction.id, "latency_s": round(latency, 1),
                          "clip": "demo/clips/monsoon.mp4",
-                         "previous_interaction_id": prev_id}
+                         "edited_from": str(clip_a_path.name)}
         save_record(record)
         return True
     except Exception:

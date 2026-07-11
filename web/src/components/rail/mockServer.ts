@@ -10,7 +10,7 @@
 
 import type { BriefData, VariantsPollResponse, VariantSlot } from "./types";
 
-export const USE_MOCK = true;
+export const USE_MOCK = false;
 
 /** Ms after first poll at which each slot completes. */
 const SLOT_DONE_AT_MS = [1500, 3000, 4500, 6000];

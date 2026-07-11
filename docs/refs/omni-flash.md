@@ -16,13 +16,20 @@ interaction = client.interactions.create(
 ```
 
 ## Edit a previous video (Clip B = monsoon)
+⚠ LIVE-TESTED 2026-07-11: `previous_interaction_id` is REJECTED for video ("Video extension is
+currently not supported"). The docs' multi-turn story is ahead of the preview API. Working path —
+feed the previous clip back as VIDEO INPUT:
 ```python
 res2 = client.interactions.create(
     model="gemini-omni-flash-preview",
-    previous_interaction_id=res1.id,
-    input="same room, monsoon evening: rain on the window, lamps on",
+    input=[
+        {"type": "video", "data": clip_a_b64, "mime_type": "video/mp4"},
+        {"type": "text", "text": "same room, monsoon evening: rain on the window, lamps on"},
+    ],
+    generation_config={"video_config": {"task": "edit"}},
 )
 ```
+(~82s verified. Image edits still chain via `previous_interaction_id` fine — this is video-only.)
 
 ## Output
 - SDK: `interaction.output_video.data` (base64 mp4).
@@ -31,7 +38,8 @@ res2 = client.interactions.create(
   our 10s/720p clips may exceed it; T10 should use URI delivery + polling by default.)
 
 ## Hard rules
-- **NEVER set `store=false`** — it breaks `previous_interaction_id` edit chains (docs-confirmed).
+- **NEVER set `store=false`** (docs-stated for edit chains; harmless to keep even on the
+  video-input path).
 - Video *references* longer than ~3s are not processed correctly; no multi-video reasoning.
 - Generation time varies with load — pre-render early (T10 starts at ~1:00 PM), never live on stage.
 - ~$0.10 per second of 720p output (≈ $1 per 10s clip).

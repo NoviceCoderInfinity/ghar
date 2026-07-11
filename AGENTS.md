@@ -38,8 +38,11 @@ built-in `google_search` tool for live grounded price ESTIMATES in conversation.
 - Images: T3 shootout picks between `gemini-3.1-flash-image` (NB2 — identity-preserving edits,
   the default) and `gemini-3.1-flash-lite-image` (NB2 Lite — fastest, docs say NOT optimized for
   editing). (docs: https://ai.google.dev/gemini-api/docs/image-generation)
-- Video: `gemini-omni-flash-preview` — Interactions API, `previous_interaction_id` for edits;
-  never set `store=false` (breaks edit chains). (docs: https://ai.google.dev/gemini-api/docs/omni)
+- Video: `gemini-omni-flash-preview` — Interactions API. LIVE-TESTED 2026-07-11: the API
+  currently REJECTS `previous_interaction_id` for video ("Video extension is currently not
+  supported"). Working edit path: feed the previous clip back as video input with
+  `generation_config={"video_config": {"task": "edit"}}` (~82s, verified — see prerender.py).
+  (docs: https://ai.google.dev/gemini-api/docs/omni)
 - Brief: any current Gemini flash text model + `google_search` grounding. Grounding returns
   citations, NOT a price API — all prices are labeled estimates, never invent URLs.
 - Stretch only: `gemini-3.5-live-translate-preview`
