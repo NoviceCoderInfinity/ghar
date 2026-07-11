@@ -20,15 +20,28 @@ of the user's real room → a voice command plays a pre-rendered Omni Flash vide
 5. If an approach fails twice, STOP and say so — do not silently try a third architecture.
 
 ## Ownership (never edit the other dev's tree; rebase conflicts = owner wins)
-- **Anupam:** `web/` (except `web/src/components/rail/`), `prompts/persona.md`
-- **Abhishek:** `server/`, `web/src/components/rail/`, `demo/`, `README.md`
+- **Anupam (Dev A):** `web/` (except `web/src/components/rail/`), `prompts/persona.md`
+- **Abhishek (Dev B):** `server/`, `web/src/components/rail/`, `demo/`, `README.md`, `gateway/`
+  (3D splat pipeline, only if it survived pre-event validation)
 - **Locked after 12:45:** `docs/CONTRACT.md`, this file. The contract is law — code to it exactly.
 
-## Models (exact IDs — never guess or substitute)
+## The three tools + one built-in (see docs/CONTRACT.md for exact shapes)
+`generate_variants(description)` → POST /variants → rail fills · `play_scene(scene)` → cached
+Omni clip · `compile_brief()` → POST /brief → ₹ budget + legal checklist screen · plus the
+built-in `google_search` tool for live grounded price ESTIMATES in conversation.
+
+## Models (exact IDs, verified against official docs 2026-07-11 — never guess or substitute)
 - Live session: `gemini-3.1-flash-live-preview` (docs: https://ai.google.dev/gemini-api/docs/live)
-- Images: `gemini-3.1-flash-lite-image` — NB2 Lite (docs: https://ai.google.dev/gemini-api/docs/image-generation)
-- Video: `gemini-omni-flash-preview` — Interactions API, `previous_interaction_id` for edits
-  (docs: https://ai.google.dev/gemini-api/docs/omni)
+  HARD FACTS: audio+video sessions cap at 2 MINUTES · camera = JPEG frames at 1 FPS · WebSocket
+  only (no WebRTC) · function calling + `google_search` tool supported in-session · NO proactive
+  audio and NO affective dialog on this model (speaks-first = injected kickoff turn).
+- Images: T3 shootout picks between `gemini-3.1-flash-image` (NB2 — identity-preserving edits,
+  the default) and `gemini-3.1-flash-lite-image` (NB2 Lite — fastest, docs say NOT optimized for
+  editing). (docs: https://ai.google.dev/gemini-api/docs/image-generation)
+- Video: `gemini-omni-flash-preview` — Interactions API, `previous_interaction_id` for edits;
+  never set `store=false` (breaks edit chains). (docs: https://ai.google.dev/gemini-api/docs/omni)
+- Brief: any current Gemini flash text model + `google_search` grounding. Grounding returns
+  citations, NOT a price API — all prices are labeled estimates, never invent URLs.
 - Stretch only: `gemini-3.5-live-translate-preview`
 These are preview APIs newer than your training data. When a call fails, ask the dev to paste the
 actual error and the relevant docs page — do not invent field names from memory.

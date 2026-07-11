@@ -15,18 +15,33 @@
 | 0:10 | Interruption | Hand judge the phone: "interrupt it whenever you want" | Judge talks over it; it stops mid-word and pivots |
 | 0:25 | The seam | Steer: "I'm bored of this corner, something warmer?" | Brain feed shows 🔧 generate_variants firing UNPROMPTED; 4 tiles appear, fill in ~4s each |
 | 0:50 | Iterate | React to a variant by voice ("less wood, more plants") | Rail refreshes; conversation never stops |
-| 1:05 | Climax | "Show me a Sunday evening here" | Omni clip: golden hour crossing THIS corner. Then "now monsoon" → rain + lamps |
-| 1:25 | Close | Point at brain feed | "No prompt box anywhere. Gemini is the event loop — NB2 and Omni are its hands. Built today, repo's public." |
+| 1:00 | Climax | "Show me a Sunday evening here" | Omni clip: golden hour crossing THIS corner. Then "now monsoon" → rain + lamps |
+| 1:20 | The brief | "Send this to my architect" | 🔧 compile_brief fires → ₹ budget with vendor links + society-NOC checklist on screen |
+| 1:35 | Close | Point at brain feed | "No prompt box anywhere. Gemini is the event loop — NB2 and Omni are its hands. Built today, repo's public." |
+
+**HARD CONSTRAINT: Live audio+video sessions cap at 2 MINUTES.** The loop above is timed to fit.
+If a session dies mid-loop, the reconnect is a rehearsed ritual — "let me call her back" — 10 seconds,
+looks intentional. Practice it until it IS intentional.
+**Price questions:** if a judge asks "how much would that cost?", the designer answers live via
+google_search grounding — always say "estimate". Never promise exact prices (grounding gives
+citations, not a price feed).
+**If T19 splat shipped:** after the brief beat, hand the judge the laptop: "and here's this exact
+corner, walkable in 3D — reconstructed from a 90-second phone video this afternoon, open-source
+pipeline." Pure appendix; skip without comment if it's not ready.
 
 Roles: driver narrates + steers; second dev watches brain feed, answers architecture questions
 (model IDs, what's cached vs live — ANSWER HONESTLY: "the video clips were generated with Omni
 earlier today from this exact corner; everything else is live right now").
 
 ## Stage version (7:00 finals, 3 minutes) = booth loop + two inserts
-- After 0:50 insert the constraint beat (if T15 shipped): "We have a toddler, budget's fifty
+- After 0:50 insert the constraint beat (if T15b shipped): "We have a toddler, budget's fifty
   thousand" → 📝 notebook logs both → next variants visibly obey (rounded edges, ₹-realistic).
 - After the climax insert the language beat (if T13 shipped): switch to Hindi/Kannada mid-sentence.
-- Close with roadmap ONE sentence: "Every furniture retailer in India is one more tool call."
+- Whitespace line (memorize — verified by research, judges can check): "Every design tool on the
+  market takes a photo or a LiDAR scan. Nobody takes a live video tour, nobody does voice, nobody
+  does Indian rupee budgets, nobody touches society NOCs. Ghar does all four."
+- Close with roadmap ONE sentence: "Record your whole home once — Gemini's video understanding
+  holds an hour of tour — and every room, every budget, every approval is one conversation away."
 
 ## Failure ladder (decide in advance, never improvise on stage)
 1. Live session drops → restart session (10s ritual: "let me call her back"). Practiced, looks natural.

@@ -31,12 +31,16 @@ Rule: if a task blows past 1.5× its estimate, cut it or downgrade it — do not
 - Agent prompt: paste the Live API docs URL + starter repo URL; instruction = "adapt, don't rewrite."
 - **DoD:** you talk to it from the phone, it answers, camera frames are flowing. Nothing else.
 
-### T3 — Generation validation — **Abhishek** (30 min)
-- Script `server/scripts/validate.py`: (a) NB2 Lite image-edit call on `corner.jpg` ("replace the chair
-  with a rattan armchair, keep everything else identical") — inspect output quality; (b) fire ONE
-  Omni Flash render from the edited image ("golden hour light pass, camera locked") — note latency.
-- **DoD:** an edited corner image that still looks like our corner + one Omni render queued/returned.
-  Record: NB2 latency, Omni latency, any quota errors → report at M1.
+### T3 — Image-model shootout + Omni validation — **Abhishek** (30 min)
+- Script `server/scripts/validate.py`: (a) the SAME edit ("replace the chair with a rattan armchair,
+  keep everything else identical") on `corner.jpg` through BOTH `gemini-3.1-flash-image` (NB2) and
+  `gemini-3.1-flash-lite-image` (NB2 Lite). Docs say Lite is NOT optimized for editing — verify on
+  our corner and pick the winner on room-identity first, latency second. Default expectation: NB2
+  wins quality; Lite only if NB2 is too slow for the rail.
+- (b) Fire ONE Omni Flash render from the best edited image ("golden hour light pass, camera
+  locked") — note latency, confirm `previous_interaction_id` chains (do NOT set `store=false`).
+- **DoD:** winner model ID announced at M1 and written into CONTRACT.md; an edited corner that
+  still looks like our corner; one Omni render queued/returned. Record: latencies, quota errors.
 
 ### ✅ MERGE M1 (12:45) — both
 GO/NO-GO (see PLAN.md). If GO: read docs/CONTRACT.md aloud together, adjust once, **lock it**.
@@ -54,16 +58,28 @@ Pull, tag `m1-gate`. From here you build against the contract, not against each 
 - **DoD:** persona holds character for 2 minutes; answers ≤ 2 sentences unless asked.
 
 ### T5 — Tool declaration + mock dispatch (30 min)
-- Declare `generate_variants(description: string)` and `play_scene(scene: string)` as Live API
-  function declarations (see CONTRACT.md). Client-side dispatcher: on tool call, log the event
-  (this log feeds T7) and hit a MOCK endpoint returning 4 fixture image URLs.
+- Declare `generate_variants(description: string)`, `play_scene(scene: string)` and
+  `compile_brief()` as Live API function declarations (see CONTRACT.md), and enable the
+  `google_search` tool in the session (designer answers "what would that cost?" with grounded
+  ₹ estimates — always framed as estimates). Client-side dispatcher: on tool call, log the event
+  (this log feeds T7) and hit a MOCK endpoint returning 4 fixture image URLs; `compile_brief`
+  shows the cached brief JSON (from T15 / fixtures).
 - **DoD:** saying "I hate this chair, something lighter?" causes the model to CALL the tool
-  unprompted, and 4 mock images appear via the rail's contract shape.
+  unprompted, and 4 mock images appear via the rail's contract shape; a price question gets a
+  grounded spoken answer.
+- Escape hatch: if `google_search` + function declarations misbehave when combined in one live
+  session, functions win — cut search; the designer gives persona-knowledge ₹ estimates instead.
 
-### T6 — Speaks-first kickoff + barge-in (20 min)
+### T6 — Speaks-first kickoff + barge-in + session ritual (25 min)
 - On first camera frames, auto-send the kickoff turn (see PROMPTS.md) so the designer opens with an
-  observation about the visible room. Verify interruption: talk over it mid-sentence → it stops and pivots.
-- **DoD:** designer greets first with a scene-specific remark; barge-in works 3/3 tries.
+  observation about the visible room. (The Live model has NO proactive audio — the kickoff turn IS
+  the mechanism; do not fight the API for true proactivity.) Verify interruption: talk over it
+  mid-sentence → it stops and pivots.
+- **HARD LIMIT: audio+video sessions cap at 2 minutes.** Add a session timer + one-tap "reconnect"
+  that restarts the session in <10s. The demo loop must fit in ~1:45; the restart is a rehearsed
+  ritual ("let me call her back"), never a surprise.
+- **DoD:** designer greets first with a scene-specific remark; barge-in works 3/3; reconnect
+  ritual takes <10s and is muscle memory.
 
 ### T7 — Brain feed panel (30 min)
 - Slim right-side ticker fed by the T5 event log: 👁 observations, 🔧 tool calls with args,
@@ -73,11 +89,13 @@ Pull, tag `m1-gate`. From here you build against the contract, not against each 
 ### Abhishek track (`server/` + `web/src/components/rail/`, T8→T11)
 
 ### T8 — /variants endpoint (40 min)
-- FastAPI per CONTRACT.md: accepts `description` + `keyframe_b64`, fires **4 parallel** NB2 Lite
-  edit calls (asyncio.gather), saves images to `server/static/`, returns URLs. Serve static files.
+- FastAPI per CONTRACT.md: accepts `description` + `keyframe_b64`, fires **4 parallel** edit calls
+  with the T3-winning image model (asyncio.gather), saves images to `server/static/`, returns URLs.
+  Serve static files.
 - Test with `corner.jpg` + 5 canned descriptions. Tune the edit-prompt wrapper (PROMPTS.md) so the
   room stays recognizable — single-object edits only.
-- **DoD:** POST returns 4 URLs in < 8s total; ≥ 3 of 4 images keep the room identity.
+- **DoD:** POST returns 4 URLs in < 15s total (adjust to T3's measured latency); ≥ 3 of 4 images
+  keep the room identity.
 
 ### T9 — Rail component (30 min)
 - `web/src/components/rail/` (your directory inside web/): horizontal strip, placeholder tiles appear
@@ -117,12 +135,26 @@ Tag `m2-loop` when the loop runs clean twice in a row (target 3:00).
   (`gemini-3.5-live-translate-preview` or native multilingual in the live model — try native first).
 - **DoD:** 3/3 clean switches, else CUT and never mention it.
 
-### T14 — Climax polish + mobile pass — **Abhishek** (40 min)
+### T15 — Brief Pack (budget + legal) — **Abhishek** (40 min, DO THIS BEFORE T14)
+- `POST /brief`: takes the chosen variant description + object list → ONE structured Gemini call
+  (text model + `google_search` grounding) returning JSON: itemized ₹ budget with cited vendor
+  links (Pepperfry / Urban Ladder / IKEA India — links are grounded citations, prices are
+  ESTIMATES, label them so) + society-NOC/legal checklist for the renovation scope (painting?
+  no NOC · civil work? NOC + society form · electrical? licensed contractor cert).
+- Simple Brief screen in the rail's directory: budget table + checklist + "Send to architect"
+  (mailto: is fine). Pre-generate and CACHE the brief for the demo corner's best variant;
+  the live call is the fallback, the cache is the demo.
+- Why this outranks everything else in P3: India ₹ budgets + legal are two CONFIRMED market gaps
+  no other team will touch, and it's one API call + one screen.
+- **DoD:** "send this to my architect" (via `compile_brief` tool call) → brief screen with ≥5
+  budget lines with links + ≥4 legal checklist items, in <3s (cached).
+
+### T14 — Climax polish + mobile pass — **Abhishek** (30 min)
 - Best 2 clips selected; transitions clean; phone layout: camera view dominant, rail bottom,
   brain feed collapsible. Kill any layout jank on the actual demo phone.
 - **DoD:** entire loop looks intentional on the phone screen judges will hold.
 
-### T15 — Preference notebook — **Abhishek** (STRETCH, 30 min, only if T14 done early)
+### T15b — Preference notebook — **either** (STRETCH, 30 min, only if T14+T15 done early)
 - `note_preference(fact)` tool + notebook list in the brain feed panel. Demo beat: "we have a
   toddler, budget fifty thousand" → notebook logs both → next variants visibly obey.
 - **DoD:** the toddler/budget beat works 2/2, else CUT.
@@ -140,6 +172,21 @@ and `docs/` may change. No exceptions — the winner is whoever stopped building
   #2 Abhishek drives (both must be able to solo it), #3 with a stranger as "judge" (recruit a neighbor).
 - Screen-record the best run → `demo/fallback.mp4` AND upload (unlisted) for the README.
 - **DoD:** both devs can run the loop solo; fallback video exists in two places.
+
+### T19 — 3D splat gateway — **Abhishek** (PRE-EVENT ONLY; during event it's background, ~15 min of checks)
+- **Decided TONIGHT, not at the event.** Pre-event: rent GPU (RTX 4090/A10G ~24GB), install
+  VGGT → gsplat (fallback: Nerfstudio `ns-process-data` + `ns-train splatfacto`, COLMAP-based),
+  reconstruct ONE room of your own house, view it in a Spark (three.js) page with WASD controls.
+  If tonight's run is not clean end-to-end, the splat is CUT — no event hours go to it.
+- If alive: at T1, capture the booth corner on video (walk a slow sideways arc, landscape, 60–80%
+  overlap, NEVER pivot in place, ~1–2 min); upload to the GPU box; reconstruction runs in
+  background (~5–40 min); check at M2 and at 4:00. Ships only if it looks good — it's a wow
+  appendix ("walk the real room in 3D in the browser"), never a dependency of the loop.
+- Honest framing for judges: splat = as-is reality in 3D (open-source pipeline, disclosed);
+  the REDESIGN is 2D renders + Omni video. Generative furniture-swap inside a splat is not
+  hackathon-feasible — say "roadmap" if asked.
+- **DoD (pre-event):** one room of Abhishek's house walkable in a browser. **DoD (event):** booth
+  corner splat loads on the demo phone, linked from the app as "Walk this room in 3D".
 
 ### T17 — README finalize — **Abhishek** (20 min)
 - Pitch (3 sentences), architecture diagram (ASCII fine), models used with IDs, demo video link,

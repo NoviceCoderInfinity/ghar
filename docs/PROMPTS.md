@@ -42,7 +42,9 @@ immediately make one specific, concrete observation about their room — the lig
 furniture, a color, the layout. Then ask one short question about how they use this space.]
 ```
 
-## 3. NB2 Lite edit wrapper (server wraps every tool-call description) — T8
+## 3. Image edit wrapper (server wraps every tool-call description) — T8
+(Model = T3 shootout winner. Default `gemini-3.1-flash-image` — docs say Lite is NOT optimized
+for editing; Lite only if NB2 is too slow for the rail.)
 
 ```
 Edit this photograph of a real room. {description}.
@@ -69,6 +71,24 @@ Clip B (Interactions API, previous_interaction_id = Clip A's interaction):
 Same room, same furniture, but now a monsoon evening: rain streaking the window, cool grey
 daylight outside, warm lamps glowing inside, subtle reflections on the floor near the window.
 Camera locked, no cuts.
+```
+
+## 6. Brief Pack prompt (T15 — one structured call, text model + google_search grounding)
+
+```
+You are preparing an architect brief for a room redesign in Bengaluru, India.
+DESIGN: {chosen variant description}
+OBJECTS TO SOURCE: {object list}
+
+Return strict JSON matching the /brief schema in CONTRACT.md:
+1. "budget": for each object, a realistic Indian market price ESTIMATE in INR and a real vendor
+   link found via search (prefer Pepperfry, Urban Ladder, IKEA India, Wakefit). Mark every price
+   "estimate". If no good link is found, give the estimate with source_url null — never invent URLs.
+2. "legal": the approval checklist for this renovation scope in a typical Bengaluru apartment
+   society — painting/decor only → usually no NOC; any civil/structural/electrical work → society
+   NOC (form + notice period), licensed electrician certificate, working-hours rules, debris
+   disposal. Include only steps relevant to THIS scope. required: true/false per step.
+Keep it to 5-8 budget lines and 4-6 legal steps. This will be read on a phone screen.
 ```
 
 ## 5. Judge-safe edit envelope (build during T12 — the demo only walks these)

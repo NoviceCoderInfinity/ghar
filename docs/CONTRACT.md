@@ -15,10 +15,16 @@ Phone browser (web/)
  └─ Brain feed panel                                  ← Anupam
 
 FastAPI (server/)                                     ← Abhishek
- ├─ POST /variants  → 4 parallel NB2 Lite edit calls → static URLs
+ ├─ POST /variants  → 4 parallel image-edit calls (T3-winning model) → static URLs
+ ├─ POST /brief     → 1 Gemini text call + google_search grounding → budget+legal JSON (cached for demo)
  ├─ GET  /static/*  → generated images
  └─ scripts/prerender.py → Omni Flash clips → demo/clips/   (run in background, NOT a live endpoint)
 ```
+
+**Image model:** decided at T3 shootout, written here at M1. Default: `gemini-3.1-flash-image`
+(NB2 — docs say Lite is NOT optimized for editing). If NB2 too slow for the rail, fall back to Lite.
+**Live session constraint:** audio+video sessions cap at 2 minutes — web/ shows a timer and a
+one-tap reconnect. Server must be stateless per-request so reconnects lose nothing.
 
 ## Function declarations (Live session tools) — exact shapes
 
@@ -53,6 +59,18 @@ FastAPI (server/)                                     ← Abhishek
 }
 ```
 
+```json
+{
+  "name": "compile_brief",
+  "description": "Compile the architect brief for the current design: itemized rupee budget with vendor links and the legal/society-approval checklist. Call when the user asks to 'send this to my architect', asks about total cost, or asks what approvals they need.",
+  "parameters": { "type": "object", "properties": {}, "required": [] }
+}
+```
+
+Also enabled in the Live session: the built-in `google_search` tool — the designer answers
+"what would that cost?" questions live with grounded ₹ ESTIMATES (never promise exact prices;
+grounding returns citations, not a price API).
+
 ## HTTP contract
 
 ### POST /variants
@@ -77,6 +95,23 @@ Poll every 1s (rail does this):
 ```
 Rail renders 4 placeholder tiles the moment the tool call fires (from the brain-feed store event),
 fills each tile as its slot goes `done`, quietly hides `failed` slots.
+
+### POST /brief
+Request:
+```json
+{ "description": "string (chosen variant's design direction)", "objects": ["armchair", "curtains", "..."] }
+```
+Response (cached for the demo corner — live call is the fallback):
+```json
+{ "budget": [
+    { "item": "Rattan armchair", "estimate_inr": 12500, "source_url": "https://...", "note": "estimate" }
+  ],
+  "total_estimate_inr": 48000,
+  "legal": [
+    { "step": "Society NOC for civil work", "required": true, "detail": "Form + 2 weeks notice" }
+  ] }
+```
+Brief screen (Abhishek's rail directory) renders budget table + legal checklist + "Send to architect".
 
 ## Brain-feed event store (client-side, web/src/state/events.ts) — Anupam owns, Abhishek reads
 ```ts
