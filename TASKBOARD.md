@@ -1,5 +1,8 @@
 # GHAR Task Board — numbered tasks, owners, merge points
 
+> **PIVOT 2026-07-11 PM:** laptop-first demo + dual-mode (STUDIO camera / DREAM voice-only) — see docs/PIVOT-DUALMODE.md. It overrides phone-first assumptions below.
+
+
 Legend: **DoD** = definition of done. Est = wall-clock estimate WITH the coding agent doing the typing.
 Rule: if a task blows past 1.5× its estimate, cut it or downgrade it — do not push the schedule right.
 

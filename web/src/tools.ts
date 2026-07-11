@@ -156,10 +156,11 @@ export async function dispatchToolCall(
             });
           }, 6000);
         } else {
+          // DREAM mode: no camera feed -> keyframe_b64 null -> server does pure
+          // text-to-image generation (docs/PIVOT-DUALMODE.md). Never block on a missing frame.
           const keyframe_b64 = getLatestKeyframeB64();
           if (!keyframe_b64) {
-            console.error("[tools] No camera keyframe captured yet!");
-            return;
+            console.log("[tools] No camera keyframe — DREAM mode generation.");
           }
 
           console.log("[tools] Posting variants fetch to:", `${SERVER_URL}/variants`);

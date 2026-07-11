@@ -1,5 +1,8 @@
 # GHAR — Master Plan (Google DeepMind Bangalore Hackathon) — v2, post-research 2026-07-11
 
+> **PIVOT 2026-07-11 PM:** laptop-first demo + dual-mode (STUDIO camera / DREAM voice-only) — see docs/PIVOT-DUALMODE.md. It overrides phone-first assumptions below.
+
+
 **Product:** Ghar — a live interior designer in your pocket. Camera-first, no prompt box.
 Tour your room on a video call with an AI designer → it redesigns as you argue → one voice
 command compiles a ₹-budget + vendor + legal brief for your architect.
