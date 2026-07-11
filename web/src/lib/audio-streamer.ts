@@ -223,16 +223,18 @@ export class AudioStreamer {
       this.checkInterval = null;
     }
 
-    this.gainNode.gain.linearRampToValueAtTime(
-      0,
-      this.context.currentTime + 0.1
-    );
-
+    // Fade the node the already-scheduled sources hang off, but swap in a fresh
+    // live gain node immediately — audio that arrives during the 200ms fade
+    // belongs to the model's NEXT reply and must not land in the dying node.
+    const oldGain = this.gainNode;
+    oldGain.gain.linearRampToValueAtTime(0, this.context.currentTime + 0.1);
     setTimeout(() => {
-      this.gainNode.disconnect();
-      this.gainNode = this.context.createGain();
-      this.gainNode.connect(this.context.destination);
+      try {
+        oldGain.disconnect();
+      } catch {}
     }, 200);
+    this.gainNode = this.context.createGain();
+    this.gainNode.connect(this.context.destination);
   }
 
   async resume() {

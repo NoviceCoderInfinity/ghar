@@ -93,6 +93,17 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     return { ...this.config };
   }
 
+  // Latest session-resumption handle from the server; lets a reconnect continue
+  // the same conversation instead of starting cold.
+  private _resumptionHandle: string | null = null;
+  public get resumptionHandle() {
+    return this._resumptionHandle;
+  }
+
+  // Incremented per connect(); callbacks from an older websocket are dropped so
+  // a late close/error from a dead socket can never clobber the live session.
+  private connectToken = 0;
+
   constructor(options: LiveClientOptions) {
     super();
     this.client = new GoogleGenAI(options);
@@ -121,11 +132,18 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     this.config = config;
     this._model = model;
 
+    const token = ++this.connectToken;
+    const guard =
+      <A extends unknown[]>(fn: (...args: A) => void) =>
+      (...args: A) => {
+        if (token === this.connectToken) fn(...args);
+      };
+
     const callbacks: LiveCallbacks = {
-      onopen: this.onopen,
-      onmessage: this.onmessage,
-      onerror: this.onerror,
-      onclose: this.onclose,
+      onopen: guard(this.onopen),
+      onmessage: guard(this.onmessage),
+      onerror: guard(this.onerror),
+      onclose: guard(this.onclose),
     };
 
     try {
@@ -167,6 +185,11 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
   }
 
   protected onclose(e: CloseEvent) {
+    // A server-initiated close must reset connection state here — otherwise
+    // status stays "connected" and every later connect() no-ops, which is what
+    // made auto-reconnect silently do nothing.
+    this._session = null;
+    this._status = "disconnected";
     this.log(
       `server.close`,
       `disconnected ${e.reason ? `with reason: ${e.reason}` : ``}`
@@ -175,6 +198,17 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
   }
 
   protected async onmessage(message: LiveServerMessage) {
+    if (message.sessionResumptionUpdate) {
+      const u = message.sessionResumptionUpdate;
+      if (u.resumable && u.newHandle) {
+        this._resumptionHandle = u.newHandle;
+      }
+      return;
+    }
+    if (message.goAway) {
+      this.log("server.goAway", `session ending in ${message.goAway.timeLeft}`);
+      return;
+    }
     if (message.setupComplete) {
       this.log("server.send", "setupComplete");
       this.emit("setupcomplete");

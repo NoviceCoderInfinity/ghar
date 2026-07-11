@@ -130,6 +130,9 @@ function GharConsole({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
       },
       // Long sessions: compress old context instead of dying when the window fills.
       contextWindowCompression: { slidingWindow: {} },
+      // Ask the server for resumption handles so an auto-reconnect after the
+      // session cap continues the SAME conversation (see use-live-api onClose).
+      sessionResumption: {},
       // Barge-in tuning: detect the user's speech aggressively and cut model audio fast,
       // so interruptions land even with laptop speaker bleed into the mic.
       realtimeInputConfig: {

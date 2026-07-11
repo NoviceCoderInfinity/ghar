@@ -79,10 +79,23 @@ function ControlTray({
     useLiveAPIContext();
 
   const kickoffSentRef = useRef(false);
+  // Auto-reconnects resume the same conversation (session resumption handle) —
+  // suppress the greeting kickoff for those; only fresh manual connects greet.
+  const suppressKickoffRef = useRef(false);
+
+  useEffect(() => {
+    const onAutoReconnecting = () => {
+      suppressKickoffRef.current = true;
+    };
+    window.addEventListener("ghar-auto-reconnecting", onAutoReconnecting);
+    return () =>
+      window.removeEventListener("ghar-auto-reconnecting", onAutoReconnecting);
+  }, []);
 
   useEffect(() => {
     if (!connected) {
-      kickoffSentRef.current = false;
+      kickoffSentRef.current = suppressKickoffRef.current;
+      suppressKickoffRef.current = false;
     }
   }, [connected]);
 
@@ -242,7 +255,16 @@ function ControlTray({
           <button
             ref={connectButtonRef}
             className={cn("action-button connect-toggle", { connected })}
-            onClick={connected ? disconnect : connect}
+            onClick={
+              connected
+                ? disconnect
+                : () => {
+                    // Manual play is always a fresh conversation — greet again
+                    // even if a prior auto-reconnect suppressed the kickoff.
+                    kickoffSentRef.current = false;
+                    connect();
+                  }
+            }
           >
             <span className="material-symbols-outlined filled">
               {connected ? "pause" : "play_arrow"}

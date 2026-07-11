@@ -84,9 +84,20 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       reconnectAttemptsRef.current += 1;
       const attempt = reconnectAttemptsRef.current;
       console.log(`[LiveAPI] Session dropped by server — auto-reconnecting (attempt ${attempt})...`);
+      // Reconnects continue the same conversation (resumption handle below), so
+      // ControlTray must not re-send the greeting kickoff.
+      window.dispatchEvent(new Event("ghar-auto-reconnecting"));
       setTimeout(() => {
+        // Attempt 1 resumes with the server's handle (full context survives).
+        // If the handle is rejected the session closes again, and attempts 2–3
+        // fall back to a fresh session rather than re-failing on the same handle.
+        const handle = attempt === 1 ? client.resumptionHandle : null;
+        const config: LiveConnectConfig = {
+          ...configRef.current,
+          sessionResumption: handle ? { handle } : {},
+        };
         client
-          .connect(modelRef.current, configRef.current)
+          .connect(modelRef.current, config)
           .catch((e) => console.warn("[LiveAPI] auto-reconnect failed:", e));
       }, 700);
     };
@@ -104,11 +115,15 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     window.addEventListener("ghar-user-speaking", onUserSpeaking);
 
     const onAudio = (data: ArrayBuffer) => {
-      // Self-healing playback: stop() (barge-in / interrupt) can leave the
-      // AudioContext suspended; always resume before queueing new audio so the
-      // voice can never get permanently stuck silent while the session lives.
-      audioStreamerRef.current?.resume().catch(() => {});
-      audioStreamerRef.current?.addPCM16(new Uint8Array(data));
+      const streamer = audioStreamerRef.current;
+      if (!streamer) return;
+      // Self-heal a suspended output context WITHOUT calling streamer.resume():
+      // resume() rewinds the scheduling cursor, so calling it per chunk makes
+      // new buffers play on top of ones still playing (overlapping voices).
+      if (streamer.context.state === "suspended") {
+        streamer.context.resume().catch(() => {});
+      }
+      streamer.addPCM16(new Uint8Array(data));
     };
 
     client
@@ -134,10 +149,17 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     if (!config) {
       throw new Error("config has not been set");
     }
-    intentionalCloseRef.current = true; // the pre-connect disconnect below is ours
+    // Keep the intentional flag up through the whole connect: the close event
+    // from the pre-connect teardown can arrive asynchronously, and must never
+    // be mistaken for a server drop (which would trigger a rogue reconnect).
+    intentionalCloseRef.current = true;
     client.disconnect();
-    intentionalCloseRef.current = false;
-    await client.connect(model, config);
+    reconnectAttemptsRef.current = 0;
+    try {
+      await client.connect(model, config);
+    } finally {
+      intentionalCloseRef.current = false;
+    }
   }, [client, config, model]);
 
   const disconnect = useCallback(async () => {
