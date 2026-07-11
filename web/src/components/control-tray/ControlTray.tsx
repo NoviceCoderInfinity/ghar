@@ -107,13 +107,28 @@ function ControlTray({
         },
       ]);
     };
+    // Local barge-in: 3 consecutive hot mic samples -> cut model audio on-device
+    // instantly (use-live-api listens for this), because server VAD alone can
+    // miss the user under laptop speaker bleed.
+    let hotSamples = 0;
+    const onVolume = (v: number) => {
+      setInVolume(v);
+      if (v > 0.06) {
+        hotSamples += 1;
+        if (hotSamples === 3) {
+          window.dispatchEvent(new Event("ghar-user-speaking"));
+        }
+      } else {
+        hotSamples = 0;
+      }
+    };
     if (connected && !muted && audioRecorder) {
-      audioRecorder.on("data", onData).on("volume", setInVolume).start();
+      audioRecorder.on("data", onData).on("volume", onVolume).start();
     } else {
       audioRecorder.stop();
     }
     return () => {
-      audioRecorder.off("data", onData).off("volume", setInVolume);
+      audioRecorder.off("data", onData).off("volume", onVolume);
     };
   }, [connected, client, muted, audioRecorder]);
 

@@ -42,6 +42,14 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const [config, setConfig] = useState<LiveConnectConfig>({});
   const [connected, setConnected] = useState(false);
   const [volume, setVolume] = useState(0);
+  // Distinguish user-initiated disconnects from server-side drops (session cap /
+  // GoAway). Unexpected drops auto-reconnect so the demo never dies mid-sentence.
+  const intentionalCloseRef = useRef(false);
+  const reconnectAttemptsRef = useRef(0);
+  const modelRef = useRef(model);
+  const configRef = useRef(config);
+  modelRef.current = model;
+  configRef.current = config;
 
   // register audio for streaming server -> speakers
   useEffect(() => {
@@ -62,10 +70,25 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   useEffect(() => {
     const onOpen = () => {
       setConnected(true);
+      reconnectAttemptsRef.current = 0;
     };
 
     const onClose = () => {
       setConnected(false);
+      if (intentionalCloseRef.current) return;
+      // Server-side drop: heal it. Up to 3 rapid attempts, then give up quietly.
+      if (reconnectAttemptsRef.current >= 3) {
+        console.warn("[LiveAPI] Session dropped; auto-reconnect gave up after 3 tries.");
+        return;
+      }
+      reconnectAttemptsRef.current += 1;
+      const attempt = reconnectAttemptsRef.current;
+      console.log(`[LiveAPI] Session dropped by server — auto-reconnecting (attempt ${attempt})...`);
+      setTimeout(() => {
+        client
+          .connect(modelRef.current, configRef.current)
+          .catch((e) => console.warn("[LiveAPI] auto-reconnect failed:", e));
+      }, 700);
     };
 
     const onError = (error: ErrorEvent) => {
@@ -73,6 +96,12 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     };
 
     const stopAudioStreamer = () => audioStreamerRef.current?.stop();
+
+    // Local barge-in assist: server VAD can miss the user's voice under speaker
+    // bleed. ControlTray dispatches "ghar-user-speaking" when the mic runs hot;
+    // we cut Asha's audio on-device instantly so she always yields.
+    const onUserSpeaking = () => stopAudioStreamer();
+    window.addEventListener("ghar-user-speaking", onUserSpeaking);
 
     const onAudio = (data: ArrayBuffer) =>
       audioStreamerRef.current?.addPCM16(new Uint8Array(data));
@@ -85,6 +114,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       .on("audio", onAudio);
 
     return () => {
+      window.removeEventListener("ghar-user-speaking", onUserSpeaking);
       client
         .off("error", onError)
         .off("open", onOpen)
@@ -99,11 +129,14 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     if (!config) {
       throw new Error("config has not been set");
     }
+    intentionalCloseRef.current = true; // the pre-connect disconnect below is ours
     client.disconnect();
+    intentionalCloseRef.current = false;
     await client.connect(model, config);
   }, [client, config, model]);
 
   const disconnect = useCallback(async () => {
+    intentionalCloseRef.current = true;
     client.disconnect();
     setConnected(false);
   }, [setConnected, client]);
