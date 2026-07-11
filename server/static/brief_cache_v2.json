@@ -1,0 +1,146 @@
+{
+  "budget": [
+    {
+      "item": "IKEA VATTENSTEN LED lighting strip (White, 1m)",
+      "estimate_inr": 399,
+      "source_url": "https://www.ikea.com/in/en/",
+      "note": "estimate"
+    },
+    {
+      "item": "Wakefit Bagna 6-Seater Dining Table (Glass & Steel)",
+      "estimate_inr": 21998,
+      "source_url": "https://www.wakefit.co/",
+      "note": "estimate"
+    },
+    {
+      "item": "Pepperfry Modena White Banswara Marble Top 6 Seater Dining Set",
+      "estimate_inr": 149999,
+      "source_url": "https://www.pepperfry.com/",
+      "note": "estimate"
+    },
+    {
+      "item": "Urban Ladder Dune Solid Oak Wood 6-Seater Dining Table",
+      "estimate_inr": 54999,
+      "source_url": "https://www.urbanladder.com/",
+      "note": "estimate"
+    },
+    {
+      "item": "Philips Hue Play White & Color Ambiance Smart Bar Light (2 Pack)",
+      "estimate_inr": 15999,
+      "source_url": null,
+      "note": "estimate"
+    },
+    {
+      "item": "Tp-Link Tapo L900-5 Smart Wi-Fi Light Strip (5m)",
+      "estimate_inr": 1899,
+      "source_url": null,
+      "note": "estimate"
+    }
+  ],
+  "total_estimate_inr": 278093,
+  "legal": [
+    {
+      "step": "Society NOC Submission",
+      "required": true,
+      "detail": "Submit a standard renovation NOC form to the apartment association 7 days prior, specifying work scope and contractor details."
+    },
+    {
+      "step": "Electrical & Smart Lighting Wiring Permission",
+      "required": true,
+      "detail": "Obtain approval for high-load wiring for smart LED accents and home gym AC, with a certificate from a licensed electrician."
+    },
+    {
+      "step": "Working Hours Compliance",
+      "required": true,
+      "detail": "Adhere strictly to society-mandated work hours (typically 9:00 AM to 6:00 PM, no Sundays or national holidays)."
+    },
+    {
+      "step": "Debris Chute and Waste Disposal Plan",
+      "required": true,
+      "detail": "Submit a plan for daily debris bagging and off-site disposal using society-approved vendor routes."
+    },
+    {
+      "step": "Structural Modification Restrictions",
+      "required": false,
+      "detail": "Structural modifications of load-bearing walls are strictly prohibited; layout must remain within the original footprint."
+    }
+  ],
+  "rooms": [
+    {
+      "room": "Living Room",
+      "spec": "Open-concept layout merging living and dining spaces with a sleek charcoal and oak palette.\nHero element: A floating wood TV panel with recessed, app-controlled RGBIC LED strip backlight accents."
+    },
+    {
+      "room": "Master Bedroom",
+      "spec": "Symmetrical layout with a premium king bed flanked by smart bedside consoles in a deep navy and matte gold palette.\nHero element: A floor-to-ceiling upholstered headboard with integrated warm-white vertical LED profile lights."
+    },
+    {
+      "room": "Second Bedroom",
+      "spec": "Space-saving layout featuring a wall-mounted fold-out study desk and sleek wardrobes in a light ash and sage green palette.\nHero element: An acoustic slat wall panel behind the bed with hidden ambient cove lighting."
+    },
+    {
+      "room": "Home Gym",
+      "spec": "High-durability layout with heavy-duty interlocking rubber flooring in an industrial matte black and neon blue palette.\nHero element: A full-height mirrored wall flanked by smart vertical LED pillars tracking workout ambiance."
+    },
+    {
+      "room": "Kitchen",
+      "spec": "Parallel modular layout with scratch-resistant acrylic cabinets in a modern metallic grey and white quartz palette.\nHero element: An under-cabinet touchless hand-wave-activated LED strip lighting system over the main countertop."
+    },
+    {
+      "room": "Underground Parking",
+      "spec": "Clean demarcated dual-bay layout with epoxy-coated flooring in a futuristic slate grey and safety yellow palette.\nHero element: A smart sensor-activated, overhead LED linear lighting array indicating charging bay readiness."
+    }
+  ],
+  "materials_and_equipment": [
+    {
+      "item": "UltraTech Super Cement (50kg bags)",
+      "purpose": "Civil work for gym floor reinforcement and bathroom tiling",
+      "estimate_inr": 450
+    },
+    {
+      "item": "Birla White Wall Care Putty",
+      "purpose": "Wall preparation and smoothing for LED accent wall panels",
+      "estimate_inr": 1100
+    },
+    {
+      "item": "Asian Paints Royale Luxury Emulsion (20L)",
+      "purpose": "Premium matte finish for walls in living and bedrooms",
+      "estimate_inr": 8500
+    },
+    {
+      "item": "Polycab 1.5 sq mm FR-LSH Electrical Wiring (100m coil)",
+      "purpose": "Dedicated electrical runs for LED strips and smart switches",
+      "estimate_inr": 2100
+    },
+    {
+      "item": "Finolex 2.5 sq mm Electrical Wiring (100m coil)",
+      "purpose": "Heavy-duty power lines for home gym equipment and ACs",
+      "estimate_inr": 3400
+    },
+    {
+      "item": "Dr. Fixit Super Latex (5L)",
+      "purpose": "Waterproofing compound for attached bathrooms modification",
+      "estimate_inr": 1250
+    },
+    {
+      "item": "Berger Paints Decora Primer (10L)",
+      "purpose": "Undercoat for uniform paint adhesion across newly plastered walls",
+      "estimate_inr": 2200
+    },
+    {
+      "item": "Heavy Duty SDS Rotary Hammer Drill Machine",
+      "purpose": "Contractor tool for wall channeling, gym equipment mounting, and parking fittings",
+      "estimate_inr": 7500
+    },
+    {
+      "item": "Premium Paint Rollers and Brushes Set",
+      "purpose": "Consumables for wall and ceiling paint application",
+      "estimate_inr": 1800
+    },
+    {
+      "item": "Aluminium Step Ladder (6-step, heavy-duty)",
+      "purpose": "Contractor equipment for high-ceiling LED strip and fixture installation",
+      "estimate_inr": 4500
+    }
+  ]
+}

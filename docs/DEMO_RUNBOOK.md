@@ -1,8 +1,5 @@
 # DEMO_RUNBOOK.md — the 90-second loop, booth protocol, fallbacks, submission
 
-> **PIVOT 2026-07-11 PM:** laptop-first demo + dual-mode (STUDIO camera / DREAM voice-only) — see docs/PIVOT-DUALMODE.md. It overrides phone-first assumptions below.
-
-
 ## Physical setup (arrange during P3, while builds run)
 - The booth corner IS the demo room. Props: one chair, one lamp, ideally a window in frame.
   Choose the corner at 12:00 (T1 photographs it) and never change it.
