@@ -78,6 +78,14 @@ function ControlTray({
   const { client, connected, connect, disconnect, volume } =
     useLiveAPIContext();
 
+  const kickoffSentRef = useRef(false);
+
+  useEffect(() => {
+    if (!connected) {
+      kickoffSentRef.current = false;
+    }
+  }, [connected]);
+
   useEffect(() => {
     if (!connected && connectButtonRef.current) {
       connectButtonRef.current.focus();
@@ -132,6 +140,17 @@ function ControlTray({
         const base64 = canvas.toDataURL("image/jpeg", 1.0);
         const data = base64.slice(base64.indexOf(",") + 1, Infinity);
         client.sendRealtimeInput([{ mimeType: "image/jpeg", data }]);
+
+        // Speaks-first kickoff turn: auto-send after first frame flows
+        if (connected && !kickoffSentRef.current) {
+          kickoffSentRef.current = true;
+          setTimeout(() => {
+            console.log("[ControlTray] Sending Speaks-first kickoff turn...");
+            client.send([{
+              text: "[The video call just connected. Look at the camera feed. Greet the user in one short sentence and immediately make one specific, concrete observation about their room — the light, a piece of furniture, a color, the layout. Then ask one short question about how they use this space.]"
+            }]);
+          }, 1000); // 1-second delay so at least 1-2 frames have been uploaded and processed by Gemini first!
+        }
       }
       if (connected) {
         timeoutId = window.setTimeout(sendVideoFrame, 1000 / 0.5);
