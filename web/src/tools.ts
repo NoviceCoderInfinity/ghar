@@ -11,6 +11,9 @@ const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:8000";
 // ---------------------------------------------------------------- Module-level State
 
 let getLatestKeyframeB64: (() => string | null) = () => null;
+// When the user has tapped/enlarged a variant, that image becomes the edit base for the
+// next generate_variants call ("make changes to THIS one"). Cleared when camera resumes focus.
+let editBaseB64: string | null = null;
 let chosenVariantDescription = "replace the armchair with a rattan chair, warm minimal style";
 let chosenVariantObjects: string[] = ["rattan armchair", "curtains", "plants"];
 let firstEventTime: number | null = null;
@@ -19,6 +22,10 @@ let firstEventTime: number | null = null;
 
 export function registerKeyframeGrabber(grabber: () => string | null) {
   getLatestKeyframeB64 = grabber;
+}
+
+export function setEditBase(b64: string | null) {
+  editBaseB64 = b64;
 }
 
 export function setChosenVariantDetails(description: string, objects: string[]) {
@@ -158,9 +165,13 @@ export async function dispatchToolCall(
         } else {
           // DREAM mode: no camera feed -> keyframe_b64 null -> server does pure
           // text-to-image generation (docs/PIVOT-DUALMODE.md). Never block on a missing frame.
-          const keyframe_b64 = getLatestKeyframeB64();
+          // Priority: chosen-variant edit base (user is iterating on a selected design)
+          // > live camera keyframe (STUDIO) > null (DREAM mode text-to-image).
+          const keyframe_b64 = editBaseB64 ?? getLatestKeyframeB64();
           if (!keyframe_b64) {
             console.log("[tools] No camera keyframe — DREAM mode generation.");
+          } else if (editBaseB64) {
+            console.log("[tools] Using chosen variant as edit base.");
           }
 
           console.log("[tools] Posting variants fetch to:", `${SERVER_URL}/variants`);

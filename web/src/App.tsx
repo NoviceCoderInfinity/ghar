@@ -21,13 +21,13 @@ import SidePanel from "./components/side-panel/SidePanel";
 import ControlTray from "./components/control-tray/ControlTray";
 import cn from "classnames";
 import { LiveClientOptions } from "./types";
-import { Modality } from "@google/genai";
+import { Modality, StartSensitivity, EndSensitivity } from "@google/genai";
 
 // Ghar custom imports
 import Rail, { setOnVariantChosen } from "./components/rail/Rail";
 import BriefScreen from "./components/rail/BriefScreen";
 import type { BriefData } from "./components/rail/types";
-import { tools, dispatchToolCall, registerKeyframeGrabber, setChosenVariantDetails } from "./tools";
+import { tools, dispatchToolCall, registerKeyframeGrabber, setChosenVariantDetails, setEditBase } from "./tools";
 import BrainFeed from "./components/brainfeed/BrainFeed";
 import { buildSessionContext } from "./state/sessionContext";
 
@@ -127,6 +127,16 @@ function GharConsole({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
       systemInstruction: {
         parts: [{ text: systemInstruction }],
       },
+      // Barge-in tuning: detect the user's speech aggressively and cut model audio fast,
+      // so interruptions land even with laptop speaker bleed into the mic.
+      realtimeInputConfig: {
+        automaticActivityDetection: {
+          startOfSpeechSensitivity: StartSensitivity.START_SENSITIVITY_HIGH,
+          endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH,
+          prefixPaddingMs: 100,
+          silenceDurationMs: 400,
+        },
+      },
       tools: tools,
     });
   }, [setConfig, setModel, systemInstruction]);
@@ -180,13 +190,28 @@ function GharConsole({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
 
   // 5. Connect variant selection from bottom Rail to Live Session
   useEffect(() => {
-    setOnVariantChosen((url, slot) => {
+    setOnVariantChosen(async (url, slot) => {
       if (!url) return;
       console.log("[App] Variant chosen:", url, "at slot:", slot + 1);
-      
-      // Feedback user choice to the live model to anchor suggestions
+
+      // Actually SHOW the chosen design to the model (it cannot fetch URLs — it only sees
+      // frames we stream). Send the image bytes as a realtime frame, make it the edit base
+      // for the next generate_variants, THEN tell it what happened.
+      try {
+        const blob = await (await fetch(url)).blob();
+        const b64: string = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onloadend = () => resolve((r.result as string).split(",")[1]);
+          r.onerror = reject;
+          r.readAsDataURL(blob);
+        });
+        client.sendRealtimeInput([{ mimeType: "image/jpeg", data: b64 }]);
+        setEditBase(b64);
+      } catch (err) {
+        console.warn("[App] Could not send chosen variant image to model:", err);
+      }
       client.send([{
-        text: `[User tapped and enlarged Variant ${slot + 1} from the bottom rail (${url}). Please center your suggestions around this design direction and style.]`
+        text: `[The user tapped Variant ${slot + 1} and it is now enlarged on their screen — the image was just sent to you in the video stream. React to THIS design specifically; further edit requests will modify this image.]`
       }]);
 
       // Stash design information dynamically based on which variant slot is chosen
