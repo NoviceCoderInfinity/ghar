@@ -74,8 +74,9 @@ function GharConsole({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
   const [brief, setBrief] = useState<BriefData | null>(null);
   const [activeVideoScene, setActiveVideoScene] = useState<"evening" | "monsoon" | null>(null);
 
-  // 2-minute session countdown state
-  const [timeLeft, setTimeLeft] = useState(120);
+  // Session countdown (15 min soft ceiling; Reconnect restarts it anytime)
+  const SESSION_SECONDS = 900;
+  const [timeLeft, setTimeLeft] = useState(SESSION_SECONDS);
 
   // 1. Load custom prompts/persona.md dynamically if compiled by Agent A3, then append the
   // client-built SESSION CONTEXT block (T4, docs/PROMPTS.md §1b) on both the fetched-persona
@@ -240,11 +241,11 @@ function GharConsole({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
     };
   }, [client]);
 
-  // 6. 2-minute hard cap countdown timer
+  // 6. Session countdown timer
   useEffect(() => {
     let intervalId: any = null;
     if (connected) {
-      setTimeLeft(120);
+      setTimeLeft(SESSION_SECONDS);
       intervalId = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -256,7 +257,7 @@ function GharConsole({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
         });
       }, 1000);
     } else {
-      setTimeLeft(120);
+      setTimeLeft(SESSION_SECONDS);
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
@@ -284,7 +285,7 @@ function GharConsole({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
       {connected && (
         <div className="ghar-top-bar">
           <span>Session Timer: </span>
-          <span className={cn("timer", { warning: timeLeft < 30 })}>
+          <span className={cn("timer", { warning: timeLeft < 60 })}>
             {formatTime(timeLeft)}
           </span>
           <button className="reconnect-btn" onClick={handleReconnect}>

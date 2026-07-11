@@ -262,3 +262,32 @@
     padding: 24px 10vw 60px;
   }
 }
+
+/* --- chosen-design history strip (left of the live batch) --- */
+.ghar-rail-tile--history {
+  position: relative;
+  border: 2px solid #d4a445;
+  opacity: 0.92;
+  flex: 0 0 auto;
+}
+.ghar-rail-tile--history:hover { opacity: 1; }
+.ghar-rail-history-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: #d4a445;
+  color: #1a1a1a;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+.ghar-rail-divider {
+  flex: 0 0 2px;
+  align-self: stretch;
+  margin: 10px 6px;
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 1px;
+}

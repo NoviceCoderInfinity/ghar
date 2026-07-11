@@ -79,6 +79,9 @@ export default function Rail({ serverUrl }: RailProps) {
   const [enlarged, setEnlarged] = useState<{ url: string; slot: number } | null>(
     null
   );
+  // Chosen-design lineage: one entry per pick, oldest first. Tapping a history
+  // tile re-chooses it (edit base + model notice) — cheap design time-travel.
+  const [history, setHistory] = useState<{ url: string; slot: number }[]>([]);
   const stripRef = useRef<HTMLDivElement>(null);
   const timersRef = useRef<Map<string, number>>(new Map());
   const serverUrlRef = useRef(serverUrl);
@@ -128,9 +131,19 @@ export default function Rail({ serverUrl }: RailProps) {
 
   const beginBatch = useCallback(
     (batchId: string) => {
+      // New round = clean rail: previous tiles go away (the picked one lives on in
+      // the history strip), stale pollers die, and any open zoom overlay closes so
+      // the incoming reveal is never hidden behind it.
+      timersRef.current.forEach((t, id) => {
+        if (id !== batchId) {
+          window.clearInterval(t);
+          timersRef.current.delete(id);
+        }
+      });
+      setEnlarged(null);
       setBatches((prev) => {
-        if (prev.some((b) => b.batchId === batchId)) return prev;
-        return [...prev, { batchId, slots: EMPTY_SLOTS, settled: false }];
+        const existing = prev.find((b) => b.batchId === batchId);
+        return existing ? [existing] : [{ batchId, slots: EMPTY_SLOTS, settled: false }];
       });
       if (!timersRef.current.has(batchId)) {
         pollOnce(batchId); // immediate first poll
@@ -164,14 +177,41 @@ export default function Rail({ serverUrl }: RailProps) {
     if (slot.status !== "done" || !slot.url) return;
     const url = fullUrl(slot.url);
     setEnlarged({ url, slot: slot.slot });
+    setHistory((h) =>
+      h.length > 0 && h[h.length - 1].url === url ? h : [...h, { url, slot: slot.slot }]
+    );
     if (variantChosenHandler) variantChosenHandler(url, slot.slot);
   };
 
-  if (batches.length === 0 && !enlarged) return null;
+  // Revert: tapping a history tile makes that design current again (edit base +
+  // model notice via the same chosen handler).
+  const handleHistoryTap = (item: { url: string; slot: number }) => {
+    setEnlarged(item);
+    if (variantChosenHandler) variantChosenHandler(item.url, item.slot);
+  };
+
+  if (batches.length === 0 && history.length === 0 && !enlarged) return null;
 
   return (
     <>
       <div className="ghar-rail" ref={stripRef} aria-label="Design variants">
+        {history.length > 0 ? (
+          <>
+            {history.map((item, i) => (
+              <div
+                key={`hist_${i}`}
+                className="ghar-rail-tile ghar-rail-tile--history"
+                onClick={() => handleHistoryTap(item)}
+                role="button"
+                title={`Chosen design ${i + 1} — tap to revert`}
+              >
+                <img src={item.url} alt={`Chosen design ${i + 1}`} />
+                <span className="ghar-rail-history-badge">{i + 1}</span>
+              </div>
+            ))}
+            <div className="ghar-rail-divider" aria-hidden="true" />
+          </>
+        ) : null}
         {batches.map((batch) =>
           batch.slots
             .filter((s) => s.status !== "failed") // quietly hide failures
