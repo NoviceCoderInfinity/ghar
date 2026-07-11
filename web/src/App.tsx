@@ -128,6 +128,8 @@ function GharConsole({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
       systemInstruction: {
         parts: [{ text: systemInstruction }],
       },
+      // Long sessions: compress old context instead of dying when the window fills.
+      contextWindowCompression: { slidingWindow: {} },
       // Barge-in tuning: detect the user's speech aggressively and cut model audio fast,
       // so interruptions land even with laptop speaker bleed into the mic.
       realtimeInputConfig: {

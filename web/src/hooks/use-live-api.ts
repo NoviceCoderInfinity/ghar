@@ -103,8 +103,13 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     const onUserSpeaking = () => stopAudioStreamer();
     window.addEventListener("ghar-user-speaking", onUserSpeaking);
 
-    const onAudio = (data: ArrayBuffer) =>
+    const onAudio = (data: ArrayBuffer) => {
+      // Self-healing playback: stop() (barge-in / interrupt) can leave the
+      // AudioContext suspended; always resume before queueing new audio so the
+      // voice can never get permanently stuck silent while the session lives.
+      audioStreamerRef.current?.resume().catch(() => {});
       audioStreamerRef.current?.addPCM16(new Uint8Array(data));
+    };
 
     client
       .on("error", onError)

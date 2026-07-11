@@ -111,11 +111,15 @@ function ControlTray({
     // instantly (use-live-api listens for this), because server VAD alone can
     // miss the user under laptop speaker bleed.
     let hotSamples = 0;
+    let lastCut = 0;
     const onVolume = (v: number) => {
       setInVolume(v);
-      if (v > 0.06) {
+      // Venue-noise hardened: needs sustained LOUD speech (5 samples above a high
+      // bar) and a 2.5s cooldown, so ambient chatter can't strangle Asha's audio.
+      if (v > 0.12) {
         hotSamples += 1;
-        if (hotSamples === 3) {
+        if (hotSamples === 5 && Date.now() - lastCut > 2500) {
+          lastCut = Date.now();
           window.dispatchEvent(new Event("ghar-user-speaking"));
         }
       } else {
