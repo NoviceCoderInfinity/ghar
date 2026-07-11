@@ -1,19 +1,20 @@
 /**
- * Rail.tsx — horizontal variant filmstrip (T9).
+ * Rail.tsx — variant selection UI (T9, restyled per live-test feedback).
  *
- * Exported API surface (see INTEGRATION.md):
- *   <Rail serverUrl={SERVER_URL} />          — mount once, bottom of the layout
- *   startBatch(batchId: string)              — call from the tool dispatcher right
- *                                              after POST /variants returns {batch_id}
- *   setOnVariantChosen((url, slot) => {})    — register the "user picked this tile"
- *                                              callback (feed it back to the model)
+ * Layout:
+ *   - LEFT sidebar "YOUR HOME SO FAR": small history tiles of every chosen design
+ *     (caption + check). Tap one to bring it back fullscreen and make it the edit base.
+ *   - CENTER 2x2 grid of the CURRENT batch, headed "NOW DESIGNING: <description>",
+ *     shown over the camera view while a batch is active. Tap a tile → fullscreen.
+ *   - Fullscreen overlay: tap anywhere to close (back to the grid).
  *
- * Behavior per docs/CONTRACT.md:
- *   - startBatch → 4 pulsing skeleton tiles appear IMMEDIATELY
- *   - polls GET {serverUrl}/variants/{batchId} every 1s
- *   - fills each tile as its slot goes "done"; quietly hides "failed" slots
- *   - stops polling when no slot is "pending"
- *   - tap a tile → fullscreen overlay; tap overlay to dismiss; fires onVariantChosen
+ * Exported API surface (unchanged contract, description added):
+ *   <Rail serverUrl={SERVER_URL} />
+ *   startBatch(batchId, description?)   — from the tool dispatcher after POST /variants
+ *   setOnVariantChosen((url, slot) => {})
+ *
+ * Polling per docs/CONTRACT.md: GET {serverUrl}/variants/{batchId} every 1s,
+ * fill slots as they go "done", hide "failed", stop when none "pending".
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -26,32 +27,26 @@ import "./rail.css";
    to the mounted Rail without prop drilling.                          */
 /* ------------------------------------------------------------------ */
 
-type BatchListener = (batchId: string) => void;
+type BatchListener = (batchId: string, description: string) => void;
 const batchListeners = new Set<BatchListener>();
 /** Batches announced before Rail mounted (kickoff race) — replayed on mount. */
-const preMountQueue: string[] = [];
+const preMountQueue: { batchId: string; description: string }[] = [];
 
 /**
- * Tell the rail a new variant batch exists. Call this from web/src/tools.ts
- * immediately after POST /variants returns { batch_id }.
- * Safe to call before the Rail is mounted.
+ * Tell the rail a new variant batch exists. Call from web/src/tools.ts right
+ * after POST /variants returns { batch_id }. Safe to call before mount.
  */
-export function startBatch(batchId: string): void {
+export function startBatch(batchId: string, description: string = ""): void {
   if (batchListeners.size === 0) {
-    preMountQueue.push(batchId);
+    preMountQueue.push({ batchId, description });
     return;
   }
-  batchListeners.forEach((l) => l(batchId));
+  batchListeners.forEach((l) => l(batchId, description));
 }
 
 export type VariantChosenHandler = (url: string, slot: number) => void;
 let variantChosenHandler: VariantChosenHandler | null = null;
 
-/**
- * Register a callback fired when the user taps/enlarges a variant tile.
- * `url` is the full, loadable image URL. Use it to tell the model which
- * design the user picked (and as the keyframe source for /brief or Omni).
- */
 export function setOnVariantChosen(cb: VariantChosenHandler | null): void {
   variantChosenHandler = cb;
 }
@@ -60,8 +55,15 @@ export function setOnVariantChosen(cb: VariantChosenHandler | null): void {
 
 interface Batch {
   batchId: string;
+  description: string;
   slots: VariantSlot[]; // always 4 entries
-  settled: boolean; // no pending slots left → polling stopped
+  settled: boolean;
+}
+
+interface HistoryItem {
+  url: string;
+  slot: number;
+  label: string;
 }
 
 const EMPTY_SLOTS: VariantSlot[] = [0, 1, 2, 3].map((slot) => ({
@@ -70,19 +72,20 @@ const EMPTY_SLOTS: VariantSlot[] = [0, 1, 2, 3].map((slot) => ({
   url: null,
 }));
 
+const truncate = (s: string, n: number) =>
+  s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s;
+
 export interface RailProps {
   serverUrl: string;
 }
 
 export default function Rail({ serverUrl }: RailProps) {
-  const [batches, setBatches] = useState<Batch[]>([]);
+  const [batch, setBatch] = useState<Batch | null>(null);
+  const [gridOpen, setGridOpen] = useState(true);
   const [enlarged, setEnlarged] = useState<{ url: string; slot: number } | null>(
     null
   );
-  // Chosen-design lineage: one entry per pick, oldest first. Tapping a history
-  // tile re-chooses it (edit base + model notice) — cheap design time-travel.
-  const [history, setHistory] = useState<{ url: string; slot: number }[]>([]);
-  const stripRef = useRef<HTMLDivElement>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const timersRef = useRef<Map<string, number>>(new Map());
   const serverUrlRef = useRef(serverUrl);
   serverUrlRef.current = serverUrl;
@@ -115,14 +118,14 @@ export default function Rail({ serverUrl }: RailProps) {
           res = (await r.json()) as VariantsPollResponse;
         }
       } catch {
-        return; // network blip — next tick will retry
+        return; // network blip — next tick retries
       }
 
       const settled = res.images.every((s) => s.status !== "pending");
-      setBatches((prev) =>
-        prev.map((b) =>
-          b.batchId === batchId ? { ...b, slots: res.images, settled } : b
-        )
+      setBatch((prev) =>
+        prev && prev.batchId === batchId
+          ? { ...prev, slots: res.images, settled }
+          : prev
       );
       if (settled) stopPolling(batchId);
     },
@@ -130,10 +133,10 @@ export default function Rail({ serverUrl }: RailProps) {
   );
 
   const beginBatch = useCallback(
-    (batchId: string) => {
-      // New round = clean rail: previous tiles go away (the picked one lives on in
-      // the history strip), stale pollers die, and any open zoom overlay closes so
-      // the incoming reveal is never hidden behind it.
+    (batchId: string, description: string) => {
+      // One live batch at a time: previous tiles are replaced (the picked one
+      // lives on in history), stale pollers die, and the grid opens over any
+      // zoomed view so the new reveal is never hidden.
       timersRef.current.forEach((t, id) => {
         if (id !== batchId) {
           window.clearInterval(t);
@@ -141,22 +144,17 @@ export default function Rail({ serverUrl }: RailProps) {
         }
       });
       setEnlarged(null);
-      setBatches((prev) => {
-        const existing = prev.find((b) => b.batchId === batchId);
-        return existing ? [existing] : [{ batchId, slots: EMPTY_SLOTS, settled: false }];
-      });
+      setGridOpen(true);
+      setBatch((prev) =>
+        prev && prev.batchId === batchId
+          ? prev
+          : { batchId, description, slots: EMPTY_SLOTS, settled: false }
+      );
       if (!timersRef.current.has(batchId)) {
-        pollOnce(batchId); // immediate first poll
+        pollOnce(batchId);
         const t = window.setInterval(() => pollOnce(batchId), 1000);
         timersRef.current.set(batchId, t);
       }
-      // Newest batch scrolls into view.
-      requestAnimationFrame(() => {
-        stripRef.current?.scrollTo({
-          left: stripRef.current.scrollWidth,
-          behavior: "smooth",
-        });
-      });
     },
     [pollOnce]
   );
@@ -164,7 +162,10 @@ export default function Rail({ serverUrl }: RailProps) {
   // Subscribe to startBatch() announcements; replay any pre-mount batches.
   useEffect(() => {
     batchListeners.add(beginBatch);
-    while (preMountQueue.length > 0) beginBatch(preMountQueue.shift() as string);
+    while (preMountQueue.length > 0) {
+      const q = preMountQueue.shift()!;
+      beginBatch(q.batchId, q.description);
+    }
     const timers = timersRef.current;
     return () => {
       batchListeners.delete(beginBatch);
@@ -173,65 +174,95 @@ export default function Rail({ serverUrl }: RailProps) {
     };
   }, [beginBatch]);
 
-  const handleTileTap = (slot: VariantSlot) => {
+  const handleGridTap = (slot: VariantSlot) => {
     if (slot.status !== "done" || !slot.url) return;
     const url = fullUrl(slot.url);
     setEnlarged({ url, slot: slot.slot });
     setHistory((h) =>
-      h.length > 0 && h[h.length - 1].url === url ? h : [...h, { url, slot: slot.slot }]
+      h.length > 0 && h[h.length - 1].url === url
+        ? h
+        : [...h, { url, slot: slot.slot, label: truncate(batch?.description || "Design", 26) }]
     );
     if (variantChosenHandler) variantChosenHandler(url, slot.slot);
   };
 
   // Revert: tapping a history tile makes that design current again (edit base +
   // model notice via the same chosen handler).
-  const handleHistoryTap = (item: { url: string; slot: number }) => {
-    setEnlarged(item);
+  const handleHistoryTap = (item: HistoryItem) => {
+    setEnlarged({ url: item.url, slot: item.slot });
     if (variantChosenHandler) variantChosenHandler(item.url, item.slot);
   };
 
-  if (batches.length === 0 && history.length === 0 && !enlarged) return null;
+  const showGrid = batch !== null && gridOpen && !enlarged;
+
+  if (!batch && history.length === 0 && !enlarged) return null;
 
   return (
     <>
-      <div className="ghar-rail" ref={stripRef} aria-label="Design variants">
-        {history.length > 0 ? (
-          <>
-            {history.map((item, i) => (
-              <div
-                key={`hist_${i}`}
-                className="ghar-rail-tile ghar-rail-tile--history"
-                onClick={() => handleHistoryTap(item)}
-                role="button"
-                title={`Chosen design ${i + 1} — tap to revert`}
-              >
-                <img src={item.url} alt={`Chosen design ${i + 1}`} />
-                <span className="ghar-rail-history-badge">{i + 1}</span>
+      {history.length > 0 ? (
+        <aside className="ghar-history" aria-label="Your home so far">
+          <div className="ghar-history-title">Your home so far</div>
+          {history.map((item, i) => (
+            <div
+              key={`hist_${i}`}
+              className="ghar-history-tile"
+              onClick={() => handleHistoryTap(item)}
+              role="button"
+              title="Tap to bring this design back"
+            >
+              <img src={item.url} alt={`Chosen design ${i + 1}`} />
+              <div className="ghar-history-caption">
+                <span className="ghar-history-label">{item.label}</span>
+                <span className="ghar-history-check">✓</span>
               </div>
-            ))}
-            <div className="ghar-rail-divider" aria-hidden="true" />
-          </>
-        ) : null}
-        {batches.map((batch) =>
-          batch.slots
-            .filter((s) => s.status !== "failed") // quietly hide failures
-            .map((s) => (
+            </div>
+          ))}
+        </aside>
+      ) : null}
+
+      {showGrid ? (
+        <div className="ghar-grid-wrap" aria-label="Design options">
+          <div className="ghar-grid-header">
+            <span className="ghar-grid-header-now">Now designing:</span>{" "}
+            <span className="ghar-grid-header-desc">
+              {truncate(batch!.description || "your space", 64)}
+            </span>
+            <button
+              className="ghar-grid-min"
+              onClick={() => setGridOpen(false)}
+              aria-label="Minimize options"
+              title="Show camera"
+            >
+              —
+            </button>
+          </div>
+          <div className="ghar-grid">
+            {batch!.slots.map((s) => (
               <div
-                key={`${batch.batchId}_${s.slot}`}
+                key={`${batch!.batchId}_${s.slot}`}
                 className={
-                  "ghar-rail-tile" +
-                  (s.status === "pending" ? " ghar-rail-tile--skeleton" : "")
+                  "ghar-grid-tile" +
+                  (s.status === "pending" ? " ghar-grid-tile--skeleton" : "") +
+                  (s.status === "failed" ? " ghar-grid-tile--failed" : "")
                 }
-                onClick={() => handleTileTap(s)}
+                onClick={() => handleGridTap(s)}
                 role={s.status === "done" ? "button" : undefined}
               >
                 {s.status === "done" && s.url ? (
                   <img src={fullUrl(s.url)} alt={`Variant ${s.slot + 1}`} />
                 ) : null}
               </div>
-            ))
-        )}
-      </div>
+            ))}
+          </div>
+          <div className="ghar-grid-hint">tap the one that feels like home</div>
+        </div>
+      ) : null}
+
+      {batch && !gridOpen && !enlarged ? (
+        <button className="ghar-grid-reopen" onClick={() => setGridOpen(true)}>
+          ▦ Show options
+        </button>
+      ) : null}
 
       {enlarged ? (
         <div

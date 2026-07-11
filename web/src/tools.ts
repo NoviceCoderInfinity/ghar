@@ -151,7 +151,7 @@ export async function dispatchToolCall(
         if (USE_MOCK) {
           const mockBatchId = `mock-${Date.now()}`;
           console.log("[tools] USE_MOCK is true. Spawning mock batch:", mockBatchId);
-          startBatch(mockBatchId);
+          startBatch(mockBatchId, description);
           
           // Log complete images event in 6 seconds (to mirror the mock fill duration)
           setTimeout(() => {
@@ -187,7 +187,7 @@ export async function dispatchToolCall(
 
           const { batch_id } = await res.json();
           console.log("[tools] Batch initiated successfully:", batch_id);
-          startBatch(batch_id);
+          startBatch(batch_id, description);
 
           // Track progressive image status polling to fire the logger's "images" event on finality
           const pollStart = Date.now();
