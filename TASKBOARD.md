@@ -24,7 +24,7 @@ Rule: if a task blows past 1.5× its estimate, cut it or downgrade it — do not
 
 ## PHASE 1 — GATE (12:15–12:45)
 
-### T2 — Live session spike — **Anupam** (30 min, HARD GATE)
+### ✅ T2 — Live session spike — **Anupam** (30 min, HARD GATE)
 - Clone Google's official Live API web console starter into `web/` (keep its LICENSE; note fork origin in README).
 - Swap model to `gemini-3.1-flash-live-preview`. Run on laptop, then **open on phone over hotspot**:
   mic + camera streaming, model responds with voice.
