@@ -29,6 +29,7 @@ import BriefScreen from "./components/rail/BriefScreen";
 import type { BriefData } from "./components/rail/types";
 import { tools, dispatchToolCall, registerKeyframeGrabber, setChosenVariantDetails } from "./tools";
 import BrainFeed from "./components/brainfeed/BrainFeed";
+import { buildSessionContext } from "./state/sessionContext";
 
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
 if (typeof API_KEY !== "string") {
@@ -76,8 +77,23 @@ function GharConsole({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
   // 2-minute session countdown state
   const [timeLeft, setTimeLeft] = useState(120);
 
-  // 1. Load custom prompts/persona.md dynamically if compiled by Agent A3
+  // 1. Load custom prompts/persona.md dynamically if compiled by Agent A3, then append the
+  // client-built SESSION CONTEXT block (T4, docs/PROMPTS.md §1b) on both the fetched-persona
+  // and built-in-fallback paths, before the Live session config is built (effect #2).
   useEffect(() => {
+    let cancelled = false;
+
+    const appendSessionContext = async (personaText: string) => {
+      try {
+        const context = await buildSessionContext();
+        if (!cancelled) {
+          setSystemInstruction(`${personaText}\n\n${context}`);
+        }
+      } catch (err) {
+        console.log("[App] Failed to build session context, using persona alone.", err);
+      }
+    };
+
     fetch("/prompts/persona.md")
       .then((res) => {
         if (res.ok) return res.text();
@@ -86,12 +102,18 @@ function GharConsole({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
       .then((text) => {
         if (text && text.trim().length > 10) {
           console.log("[App] Dynamically loaded custom persona system instruction.");
-          setSystemInstruction(text);
+          return appendSessionContext(text);
         }
+        return appendSessionContext(BUILT_IN_PERSONA);
       })
       .catch(() => {
         console.log("[App] Using built-in fallback system instruction.");
+        return appendSessionContext(BUILT_IN_PERSONA);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // 2. Configure Live API model, system instructions, and tool declarations
