@@ -12,7 +12,8 @@ approvals checklist. Already have a room? Show it on camera or upload a photo an
 refurbishes that instead. One Live API session drives everything — the conversation is the
 interface.
 
-**Demo video:** <!-- TODO before submission — unlisted upload link of the best rehearsal run -->
+**Short demo:** https://youtu.be/y6zc4YT8a3E
+**Detailed end-to-end demo:** https://youtu.be/1Mt2bvL1mV4
 
 **Track:** PS1 (Real-Time Multimodal Interaction, Live API), with depth evidence for PS3 (NB2
 throughput — 4 parallel concepts per turn, plan renders) and PS4 (NB2 → Omni chain — every
