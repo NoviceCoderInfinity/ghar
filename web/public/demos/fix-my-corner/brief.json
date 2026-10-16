@@ -1,0 +1,68 @@
+{
+  "budget": [
+    {
+      "item": "Rattan armchair (natural finish)",
+      "estimate_inr": 12500,
+      "source_url": "https://www.pepperfry.com/category/rattan-chairs.html",
+      "note": "estimate"
+    },
+    {
+      "item": "Handwoven jute rug, 5x7 ft",
+      "estimate_inr": 4800,
+      "source_url": "https://www.urbanladder.com/rugs",
+      "note": "estimate"
+    },
+    {
+      "item": "Floor lamp, warm brass with fabric shade",
+      "estimate_inr": 6200,
+      "source_url": "https://www.ikea.com/in/en/cat/floor-lamps-10731/",
+      "note": "estimate"
+    },
+    {
+      "item": "Cane side table",
+      "estimate_inr": 5500,
+      "source_url": "https://www.pepperfry.com/category/side-and-end-tables.html",
+      "note": "estimate"
+    },
+    {
+      "item": "Block-print cotton curtains (2 panels)",
+      "estimate_inr": 3600,
+      "source_url": "https://www.urbanladder.com/curtains",
+      "note": "estimate"
+    },
+    {
+      "item": "Plant cluster: areca palm, money plant, snake plant + terracotta pots",
+      "estimate_inr": 2400,
+      "source_url": null,
+      "note": "estimate"
+    }
+  ],
+  "total_estimate_inr": 35000,
+  "legal": [
+    {
+      "step": "Society NOC for civil work",
+      "required": false,
+      "detail": "Not required for decor-only scope (furniture, soft furnishings, plants) — no structural, plumbing or wiring changes."
+    },
+    {
+      "step": "Intimation to society office",
+      "required": true,
+      "detail": "One-line written intimation of furniture delivery dates so the service lift can be booked."
+    },
+    {
+      "step": "Working-hours compliance",
+      "required": true,
+      "detail": "Any drilling (curtain rods, wall anchors) within society hours, typically 10am-6pm on weekdays."
+    },
+    {
+      "step": "Licensed electrician certificate",
+      "required": false,
+      "detail": "Only if the floor lamp needs a new socket point; plug-in placement needs nothing."
+    },
+    {
+      "step": "Debris disposal",
+      "required": true,
+      "detail": "Packaging waste (cartons, foam) to be moved out via the society's designated disposal point, not the common bins."
+    }
+  ]
+}

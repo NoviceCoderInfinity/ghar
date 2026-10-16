@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "note": "Real outputs saved from the Ghar hackathon demo session (11 Jul 2026). Tours: gemini-omni-flash-preview. Plans and image edits: gemini-3.1-flash-image. Whole-home brief: gemini-3.5-flash with Google Search grounding. Videos re-encoded for the web; nothing else was changed.",
+  "examples": [
+    {
+      "slug": "dream-3bhk-techy",
+      "title": "Dream 3BHK, modern techy",
+      "flow": "Design my home",
+      "summary": "3BHK with a living room and dining table, a home gym and underground parking, in a modern techy style. The tour, the concept floor plan and the full architect build pack all come from this home.",
+      "cover": "tour-living-dining-gym.jpg",
+      "tours": [
+        {
+          "room": "Living + dining → home gym",
+          "caption": "Walkthrough from the LED-lit living and dining room into the home gym.",
+          "takes": [
+            { "src": "tour-living-dining-gym.mp4", "poster": "tour-living-dining-gym.jpg" }
+          ]
+        }
+      ],
+      "plans": [
+        {
+          "src": "plan.webp",
+          "caption": "Ground floor (living, dining, kitchen, master and second bedrooms, home gym) plus the underground parking level."
+        }
+      ],
+      "brief": "brief.json",
+      "briefCaption": "Whole-home architect brief: room-by-room specs, grounded budget, materials and the society approvals checklist."
+    },
+    {
+      "slug": "family-2bhk-cane",
+      "title": "Family 2BHK, cane & block-print",
+      "flow": "Design my home",
+      "summary": "A family home in a contemporary Indian style: a themed kids' bedroom, a warm wooden kitchen and a reading nook with a cane chair and block-print cushions. It includes repeat tours, an evening version of the nook, and two concept plans.",
+      "cover": "tour-reading-nook.jpg",
+      "tours": [
+        {
+          "room": "Kids' bedroom",
+          "caption": "Four separate renders of the same locked kids' room design.",
+          "takes": [
+            { "src": "tour-kids-bedroom-1.mp4", "poster": "tour-kids-bedroom-1.jpg" },
+            { "src": "tour-kids-bedroom-2.mp4", "poster": "tour-kids-bedroom-2.jpg" },
+            { "src": "tour-kids-bedroom-3.mp4", "poster": "tour-kids-bedroom-3.jpg" },
+            { "src": "tour-kids-bedroom-4.mp4", "poster": "tour-kids-bedroom-4.jpg" }
+          ]
+        },
+        {
+          "room": "Kitchen",
+          "caption": "The kitchen on its own, then a longer walk from the kitchen through the living room into a bedroom.",
+          "takes": [
+            { "src": "tour-kitchen.mp4", "poster": "tour-kitchen.jpg" },
+            { "src": "tour-kitchen-living-bedroom.mp4", "poster": "tour-kitchen-living-bedroom.jpg" }
+          ]
+        },
+        {
+          "room": "Reading nook",
+          "caption": "A daytime walkthrough, then the same nook at dusk with the lamps on.",
+          "takes": [
+            { "src": "tour-reading-nook.mp4", "poster": "tour-reading-nook.jpg" },
+            { "src": "tour-reading-nook-evening.mp4", "poster": "tour-reading-nook-evening.jpg" }
+          ]
+        }
+      ],
+      "plans": [
+        {
+          "src": "plan-2bhk.webp",
+          "caption": "2BHK concept plan: master bedroom with WFH desk, kids' room with toy storage, modular kitchen, cane sofa set, balcony."
+        },
+        {
+          "src": "plan-3bhk.webp",
+          "caption": "A second plan render from the session: a 3-bedroom layout with a kids' room, a dining corner and a WFH corner."
+        }
+      ],
+      "brief": null,
+      "briefCaption": null
+    },
+    {
+      "slug": "fix-my-corner",
+      "title": "Fix my corner, then evening & monsoon",
+      "flow": "Fix it",
+      "summary": "The refurbish flow: one edit swaps in a rattan armchair, then Omni Flash animates the corner at golden hour and re-edits that clip into a monsoon evening.",
+      "cover": "evening.jpg",
+      "input": {
+        "src": "input-test-drawing.webp",
+        "caption": "Input: a synthetic test drawing of the booth corner, not a real photo. It was used to test the pipeline."
+      },
+      "edits": [
+        {
+          "src": "nb2-edit.webp",
+          "caption": "Edit: “replace the chair with a rattan armchair” (gemini-3.1-flash-image)."
+        }
+      ],
+      "tours": [
+        {
+          "room": "Golden hour",
+          "caption": "Image-to-video from the edited corner: evening light moves across the floor.",
+          "takes": [{ "src": "evening.mp4", "poster": "evening.jpg" }]
+        },
+        {
+          "room": "Monsoon evening",
+          "caption": "The golden-hour clip fed back to Omni as a video edit: rain outside, lamps on inside.",
+          "takes": [{ "src": "monsoon.mp4", "poster": "monsoon.jpg" }]
+        }
+      ],
+      "plans": [],
+      "brief": "brief.json",
+      "briefCaption": "Room-scope brief for this corner. This is the server's bundled example brief, which it uses as a cache or fallback, not a fresh grounded call."
+    }
+  ]
+}
