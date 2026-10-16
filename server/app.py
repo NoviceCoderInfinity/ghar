@@ -767,6 +767,39 @@ async def post_export(req: ExportRequest):
     )
 
 
+# ---------------------------------------------------------------- /api/live-token
+
+@app.post("/api/live-token")
+async def post_live_token():
+    """Mint a single-use Live API ephemeral token so the browser never holds
+    GEMINI_API_KEY. Same contract as web/api/live-token.mjs (the Vercel function);
+    point the web app here in local dev via REACT_APP_TOKEN_URL."""
+    import datetime as _dt
+
+    now = _dt.datetime.now(tz=_dt.timezone.utc)
+
+    def _create():
+        return _get_client().auth_tokens.create(
+            config={
+                "uses": 1,
+                "expire_time": now + _dt.timedelta(minutes=30),
+                "new_session_expire_time": now + _dt.timedelta(minutes=1),
+                "http_options": {"api_version": "v1alpha"},
+            }
+        )
+
+    try:
+        token = await asyncio.to_thread(_create)
+    except Exception as e:
+        print(f"[live-token] failed: {type(e).__name__}")
+        raise HTTPException(status_code=502, detail="could not create live token")
+    return Response(
+        content=json.dumps({"token": token.name}),
+        media_type="application/json",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 @app.get("/")
 async def root():
     return {"ok": True, "image_model": _image_model(), "brief_model": _brief_model()}

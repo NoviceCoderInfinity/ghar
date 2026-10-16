@@ -22,9 +22,13 @@ import {
 } from "@google/genai";
 
 /**
- * the options to initiate the client, ensure apiKey is required
+ * the options to initiate the client. The browser never holds the real
+ * Gemini API key: `getToken` fetches a short-lived ephemeral token from our
+ * own backend (/api/live-token) right before each Live connect.
  */
-export type LiveClientOptions = GoogleGenAIOptions & { apiKey: string };
+export type LiveClientOptions = Omit<GoogleGenAIOptions, "apiKey"> & {
+  getToken: () => Promise<string>;
+};
 
 /** log types */
 export type StreamingLog = {

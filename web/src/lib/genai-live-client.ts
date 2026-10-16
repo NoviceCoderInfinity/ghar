@@ -70,7 +70,8 @@ export interface LiveClientEventTypes {
  * If you dont want to use react you can still use this.
  */
 export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
-  protected client: GoogleGenAI;
+  protected client: GoogleGenAI | null = null;
+  private getToken: () => Promise<string>;
 
   private _status: "connected" | "disconnected" | "connecting" = "disconnected";
   public get status() {
@@ -95,7 +96,7 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
 
   constructor(options: LiveClientOptions) {
     super();
-    this.client = new GoogleGenAI(options);
+    this.getToken = options.getToken;
     this.send = this.send.bind(this);
     this.onopen = this.onopen.bind(this);
     this.onerror = this.onerror.bind(this);
@@ -129,6 +130,13 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     };
 
     try {
+      // Ephemeral tokens are single-use and expire quickly, so mint a fresh
+      // one per connect. They are only accepted on the v1alpha endpoint.
+      const token = await this.getToken();
+      this.client = new GoogleGenAI({
+        apiKey: token,
+        httpOptions: { apiVersion: "v1alpha" },
+      });
       this._session = await this.client.live.connect({
         model,
         config,

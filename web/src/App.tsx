@@ -44,13 +44,26 @@ import {
 } from "./tools";
 import BrainFeed from "./components/brainfeed/BrainFeed";
 
-const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
-if (typeof API_KEY !== "string") {
-  throw new Error("set REACT_APP_GEMINI_API_KEY in .env");
+// The Gemini API key stays server-side. The browser asks our token endpoint
+// for a short-lived, single-use Live API token on every connect.
+// Default: the Vercel function at /api/live-token (web/api/live-token.mjs).
+// Local dev: point REACT_APP_TOKEN_URL at the FastAPI server's endpoint.
+const TOKEN_URL = process.env.REACT_APP_TOKEN_URL || "/api/live-token";
+
+async function fetchLiveToken(): Promise<string> {
+  const res = await fetch(TOKEN_URL, { method: "POST" });
+  if (!res.ok) {
+    throw new Error(`live token request failed: ${res.status}`);
+  }
+  const data = await res.json();
+  if (typeof data.token !== "string") {
+    throw new Error("live token response missing token");
+  }
+  return data.token;
 }
 
 const apiOptions: LiveClientOptions = {
-  apiKey: API_KEY,
+  getToken: fetchLiveToken,
 };
 
 // Module-level stash of the last uploaded room photo (base64 jpeg, no data-url prefix).
