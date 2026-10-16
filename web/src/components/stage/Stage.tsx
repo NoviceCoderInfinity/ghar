@@ -42,6 +42,8 @@ export interface StageProps {
   onCloseTour?: () => void;
   /** Optional: the tour video played to its end (App advances the tour queue). */
   onVideoEnded?: () => void;
+  /** Optional: open the static "Demo examples" gallery from the idle screen. */
+  onOpenDemos?: () => void;
 }
 
 /** How long the ✓ ring + zoom plays before the pick is committed. */
@@ -56,6 +58,7 @@ export default function Stage({
   children,
   onCloseTour,
   onVideoEnded,
+  onOpenDemos,
 }: StageProps) {
   const [pickedSlot, setPickedSlot] = useState<number | null>(null);
 
@@ -192,6 +195,11 @@ export default function Stage({
           e.g. “3BHK, modern techy vibe, one room as a gym” — or upload a photo
           to fix up a real room
         </div>
+        {onOpenDemos && (
+          <button className="ghar-stage-idle-demos" onClick={onOpenDemos}>
+            ▦ Browse demo examples
+          </button>
+        )}
       </div>
       {children}
     </div>

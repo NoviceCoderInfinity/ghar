@@ -7,6 +7,19 @@ import { logEvent } from "./state/events";
 
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:8000";
 
+/** False on deploys without a generation server (e.g. the public Vercel site):
+ * generation actions then point visitors at the static demo examples instead. */
+export const HAS_SERVER = Boolean(process.env.REACT_APP_SERVER_URL) || USE_MOCK;
+
+/** Tools that need the FastAPI generation server (server/). */
+const SERVER_TOOLS = new Set([
+  "generate_variants",
+  "imagine_space",
+  "refine_design",
+  "generate_tour",
+  "compile_brief",
+]);
+
 // ---------------------------------------------------------------- Module-level State
 
 let getLatestKeyframeB64: (() => string | null) = () => null;
@@ -792,6 +805,8 @@ export async function dispatchToolCall(
     onPlayVideo: (scene: "evening" | "monsoon") => void;
     onPlayTour: (videoUrl: string, areaName: string | null) => void;
     onPlanReady: (planUrl: string) => void;
+    /** No generation server on this deploy: show the demo examples instead. */
+    onNeedServer?: () => void;
   }
 ) {
   const { id, name, args } = fc;
@@ -802,6 +817,23 @@ export async function dispatchToolCall(
     name,
     args: args || {},
   });
+
+  if (!HAS_SERVER && SERVER_TOOLS.has(name)) {
+    client.sendToolResponse({
+      functionResponses: [
+        {
+          id,
+          name,
+          response: {
+            result:
+              "The image, tour and build-pack generator isn't connected on this public demo, so nothing can be rendered live right now. Tell the user briefly, and say the demo examples on screen show real tours, floor plans and build packs from an earlier session.",
+          },
+        },
+      ],
+    });
+    callbacks.onNeedServer?.();
+    return;
+  }
 
   if (name === "generate_variants") {
     const description = args.description || "";

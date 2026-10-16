@@ -40,9 +40,17 @@ import {
   tourWholeHome,
   compileBuildPack,
   resetHomeSpec,
+  HAS_SERVER,
   type BatchUpdate,
 } from "./tools";
 import BrainFeed from "./components/brainfeed/BrainFeed";
+import DemoGallery from "./components/demos/DemoGallery";
+
+/** "#demos" opens the gallery, "#demos/<slug>" one example (shareable links). */
+function parseDemoHash(): { open: boolean; slug: string | null } {
+  const m = window.location.hash.match(/^#demos(?:\/([\w-]+))?$/);
+  return m ? { open: true, slug: m[1] || null } : { open: false, slug: null };
+}
 
 // The Gemini API key stays server-side. The browser asks our token endpoint
 // for a short-lived, single-use Live API token on every connect.
@@ -113,6 +121,23 @@ function GharApp() {
   const [chosenConceptUrl, setChosenConceptUrl] = useState<string | null>(null);
   const [activeBatch, setActiveBatch] = useState<BatchUpdate | null>(null);
   const [brainOpen, setBrainOpen] = useState(false);
+
+  // Demo examples gallery (static files under /demos), synced with the URL hash.
+  const [demos, setDemos] = useState(parseDemoHash);
+  useEffect(() => {
+    const onHash = () => setDemos(parseDemoHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const openDemos = useCallback((slug: string | null = null) => {
+    window.location.hash = slug ? `demos/${slug}` : "demos";
+  }, []);
+  const closeDemos = useCallback(() => {
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    setDemos({ open: false, slug: null });
+  }, []);
+  // Shown when something needs the generation server and this deploy has none.
+  const [serverHint, setServerHint] = useState(false);
 
   // Whole-home tour queue: room names in play order + the current position.
   // Videos render sequentially in tools.tourWholeHome; readyTourVideosRef
@@ -195,15 +220,23 @@ function GharApp() {
 
   // "▶ Tour whole home": queue every locked room, render sequentially.
   const handleTourWholeHome = useCallback(() => {
+    if (!HAS_SERVER) {
+      openDemos();
+      return;
+    }
     logFeedEvent({ kind: "note", text: "user started the whole-home tour" });
     tourWholeHome(handlePlayTour, (names) => {
       readyTourVideosRef.current.clear();
       updateTourQueue({ names, current: 0 });
     }).catch((err) => console.error("[App] whole-home tour failed:", err));
-  }, [handlePlayTour, updateTourQueue]);
+  }, [handlePlayTour, updateTourQueue, openDemos]);
 
   // "✓ Finish home": user-initiated build pack — same pipeline compile_brief uses.
   const handleFinishHome = useCallback(() => {
+    if (!HAS_SERVER) {
+      openDemos();
+      return;
+    }
     logFeedEvent({ kind: "note", text: "user tapped Finish home — compiling build pack" });
     setShowBuildPack(true);
     compileBuildPack({
@@ -211,7 +244,7 @@ function GharApp() {
       onSetBrief: (b) => setBrief(b),
       onPlanReady: (url) => setPlanUrl(url),
     });
-  }, []);
+  }, [openDemos]);
 
   // After the user picks from a batch, later poll snapshots for that same
   // batch must not resurrect the grid on stage.
@@ -305,6 +338,7 @@ function GharApp() {
             console.log("[App] Floor plan ready:", url);
             setPlanUrl(url);
           },
+          onNeedServer: () => setServerHint(true),
         });
       }
     };
@@ -522,6 +556,10 @@ function GharApp() {
                 className="ghar-gallery-card-tour"
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (!HAS_SERVER) {
+                    openDemos();
+                    return;
+                  }
                   logFeedEvent({ kind: "note", text: `user started a tour of ${area.name} from the gallery` });
                   runTour(area.imageUrl, area.name, undefined, handlePlayTour).catch(
                     (err) => console.error("[App] gallery tour failed:", err)
@@ -561,6 +599,13 @@ function GharApp() {
         <header className="ghar-topbar">
           <div className="ghar-wordmark">Ghar</div>
           <div className="ghar-topbar-right">
+            <button
+              className="ghar-topbar-btn"
+              onClick={() => openDemos()}
+              title="Browse real tours, floor plans and build packs from our demo session"
+            >
+              ▦ Demo examples
+            </button>
             {homeSpec.areas.length >= 1 && (
               <button
                 className="ghar-topbar-btn ghar-finish-btn"
@@ -631,7 +676,31 @@ function GharApp() {
             onPick={handlePick}
             onVideoEnded={handleTourAdvance}
             onCloseTour={handleTourAdvance}
+            onOpenDemos={() => openDemos()}
           />
+          {serverHint && !demos.open && (
+            <div className="ghar-demo-hint" role="status">
+              <span>
+                Live generation isn't connected on this site. See real results in the demo
+                examples.
+              </span>
+              <button
+                onClick={() => {
+                  setServerHint(false);
+                  openDemos();
+                }}
+              >
+                Open demos
+              </button>
+              <button
+                className="ghar-demo-hint-close"
+                onClick={() => setServerHint(false)}
+                aria-label="Dismiss"
+              >
+                &times;
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ---- Typed prompt bar: same live session as voice ---- */}
@@ -671,7 +740,14 @@ function GharApp() {
         {/* Room photo upload (FIX-IT entry) — keyframe fallback when the camera is off */}
         <button
           className="ghar-upload-btn"
-          onClick={() => uploadInputRef.current?.click()}
+          onClick={() => {
+            if (!HAS_SERVER) {
+              // Refurbishing an upload needs the generation server.
+              openDemos("fix-my-corner");
+              return;
+            }
+            uploadInputRef.current?.click();
+          }}
         >
           📷 Upload a room photo
         </button>
@@ -710,6 +786,13 @@ function GharApp() {
         planUrl={planUrl}
         visible={showBuildPack}
         onClose={() => setShowBuildPack(false)}
+      />
+
+      <DemoGallery
+        visible={demos.open}
+        slug={demos.slug}
+        onSelect={(slug) => openDemos(slug)}
+        onClose={closeDemos}
       />
     </div>
   );
