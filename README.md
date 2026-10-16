@@ -93,8 +93,10 @@ are grounded `google_search` ESTIMATES with citations, never invented.
 ```bash
 # 1. env — server reads the repo-root .env, the web app reads web/.env (CRA prefix)
 cp .env.example .env                      # GEMINI_API_KEY=<key>
-cp web/.env.example web/.env              # REACT_APP_GEMINI_API_KEY=<key>
-                                          # REACT_APP_SERVER_URL=http://localhost:8000
+cp web/.env.example web/.env              # REACT_APP_SERVER_URL=http://localhost:8000
+                                          # REACT_APP_TOKEN_URL=http://localhost:8000/api/live-token
+                                          # (no API key in web/ — the browser gets a
+                                          #  short-lived Live token from the server)
 
 # 2. server
 cd server
@@ -109,6 +111,22 @@ npm start                                  # http://localhost:3000
 # 4. (background, once) pre-render the play_scene clips from the best edited corner image
 python server/scripts/prerender.py server/static/<best_edit>.jpg
 ```
+
+## Deploy
+
+The web app and the generation server deploy separately.
+
+**Web app → Vercel** (root directory `web`, Create React App preset, build `npm run build`,
+output `build`). `web/api/live-token.mjs` is a Vercel function that mints single-use
+ephemeral Live API tokens, so the Gemini key never ships in the JS bundle. Env vars:
+`GEMINI_API_KEY` (server-side), `REACT_APP_SERVER_URL` (public URL of the server below),
+optional `ALLOWED_ORIGINS`. Deploy from Git (or run the CLI from the repo root): `web/public/clips`
+and `web/public/prompts` are symlinks into `demo/` and `prompts/`.
+
+**Server → any long-running container host** (Cloud Run, Render, Railway, Fly…), not Vercel
+functions: `/variants`, `/tour` and `/plan` keep job state in memory, run background tasks
+after responding, and write generated files to `server/static/`. Start command:
+`uvicorn app:app --host 0.0.0.0 --port $PORT` from `server/`, with `GEMINI_API_KEY` set.
 
 ## Team
 
