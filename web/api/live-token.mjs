@@ -6,7 +6,7 @@
 //
 // Env (Vercel project settings, server-side only — no REACT_APP_ prefix):
 //   GEMINI_API_KEY   required
-//   ALLOWED_ORIGINS  optional, comma-separated (e.g. https://ghar.vercel.app).
+//   ALLOWED_ORIGINS  optional, comma-separated (e.g. https://your-app.vercel.app).
 //                    If unset, only same-origin browser requests are accepted.
 import { GoogleGenAI } from "@google/genai";
 
